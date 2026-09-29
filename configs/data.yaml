@@ -1,0 +1,91 @@
+# Dataset registry for C1 ingest.
+#
+# fetch.method:
+#   url    - plain HTTP download (resumable)
+#   gdown  - Google Drive file id
+#   manual - you download it in a browser and drop the file(s) into data/raw/<name>/ (the UQ portal needs a form)
+# csv_glob:   which CSVs (after unzipping) make up the dataset, relative to data/raw/<name>/
+# expected_rows: published count; a mismatch does not stop ingest but is flagged in the profile/manifest
+# id_cols:    kept at their parsed dtype (never downcast to float32); dropped later in C2
+# labeller:   optional function in xnids.data.labellers applied per CSV file (LycoS17 ships unlabelled)
+
+defaults:
+  csv_encoding: utf8-lossy
+  infer_schema_rows: 200000
+  float_dtype: float32
+
+datasets:
+  lycos17:
+    title: LycoS-IDS2017 (LycoSTand re-extraction of CIC-IDS2017)
+    fetch:
+      method: url
+      url: https://maupiti-git.univ-lemans.fr/lycos/lycos-ids2017/archive/master.zip
+      file: lycos-ids2017-master.zip
+    extract: ["lycos-ids2017-master.zip", "lycos-ids2017/pcap_lycos/*.zip"]
+    csv_glob: "**/pcap_lycos/*-WorkingHours.pcap_lycos.csv"
+    labeller: lycos17
+    label_col: label
+    expected_rows: null          # not published as a single number; recorded from our run
+    id_cols: [flow_id, src_addr, src_port, dst_addr, dst_port, ip_prot, timestamp]
+    ts_col: timestamp            # epoch microseconds
+
+  lycos18:
+    title: LycoS-Unicas-IDS2018 (LycoSTand re-extraction of CSE-CIC-IDS2018)
+    fetch:
+      method: gdown
+      id: 12dQPcqRDJFeJGmqqshzdYN8M5t5tMXbQ
+      file: LycoS18_dataset.csv
+    csv_glob: LycoS18_dataset.csv
+    label_col: label
+    expected_rows: 13691268
+    # The published CSV has no flow id, addresses, source port or timestamp: 77 features + label.
+    # So LycoS18 cannot get a time-block split in C3 (stratified random instead; see DATASET_CARD.md).
+    id_cols: []
+    ts_col: null
+
+  nf_unsw_v2:
+    title: NF-UNSW-NB15-v2 (NetFlow v2, 43 features)
+    fetch:
+      method: manual
+      url: https://rdm.uq.edu.au/files/8c6e2a00-ef9c-11ed-827d-e762de186848
+      file: "*.zip"
+    extract: ["*.zip"]
+    csv_glob: "**/NF-UNSW-NB15-v2.csv"
+    label_col: attack          # 'label' is the 0/1 column; 'attack' holds the class name
+    expected_rows: 2390275
+    id_cols: [ipv4_src_addr, l4_src_port, ipv4_dst_addr, l4_dst_port]
+
+  nf_cse_cic18_v2:
+    title: NF-CSE-CIC-IDS2018-v2 (bridge dataset, same PCAPs as LycoS18)
+    fetch:
+      method: manual
+      url: https://rdm.uq.edu.au/files/ce5161d0-ef9c-11ed-827d-e762de186848
+      file: "*.zip"
+    extract: ["*.zip"]
+    csv_glob: "**/NF-CSE-CIC-IDS2018-v2.csv"
+    label_col: attack
+    expected_rows: 18893708
+    id_cols: [ipv4_src_addr, l4_src_port, ipv4_dst_addr, l4_dst_port]
+
+  nf_ton_v2:
+    title: NF-ToN-IoT-v2 (stretch target)
+    fetch:
+      method: manual
+      url: https://rdm.uq.edu.au/files/a4ad7080-ef9c-11ed-a964-b70596e96ad5
+      file: "*.zip"
+    extract: ["*.zip"]
+    csv_glob: "**/NF-ToN-IoT-v2.csv"
+    label_col: attack
+    expected_rows: 16940496
+    id_cols: [ipv4_src_addr, l4_src_port, ipv4_dst_addr, l4_dst_port]
+
+  cic17_orig:
+    title: Original CIC-IDS2017 CICFlowMeter CSVs (H2 only; shipped inside the LycoS17 archive)
+    fetch:
+      method: from
+      from: lycos17              # reuses data/raw/lycos17 extraction
+    extract: ["lycos-ids2017/cicids2017/csv_files/*.zip"]
+    csv_glob: "**/cicids2017/csv_files/*.pcap_ISCX.csv"
+    label_col: label
+    expected_rows: 2830743
+    id_cols: [flow_id, source_ip, source_port, destination_ip, destination_port, protocol, timestamp]

@@ -10,7 +10,7 @@ Requirements: Linux or macOS, `git`, `make`, and [uv](https://docs.astral.sh/uv/
 (`curl -LsSf https://astral.sh/uv/install.sh | sh`). uv downloads Python 3.11 itself.
 
 ```bash
-git clone <repo> && cd <repo>
+git clone https://github.com/Jdowpasisi/Adaptive_NIDS.git && cd Adaptive_NIDS
 make setup        # venv at ~/.venvs/driftguard (override with VENV=...), pinned deps, package in editable mode
 make test         # unit tests
 make smoke        # logs one dummy run to MLflow (mlflow.db in the repo root)
