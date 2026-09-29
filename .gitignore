@@ -1,0 +1,18 @@
+# data and experiment outputs are never committed (Build Guide rule 8)
+data/*
+!data/MANIFEST.csv
+mlruns/
+mlflow.db
+models/
+live.db
+*.pcap
+*.pcapng
+replay/
+
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.venv/
+.env

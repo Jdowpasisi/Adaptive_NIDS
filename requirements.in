@@ -1,0 +1,25 @@
+# Top-level dependencies. Pinned versions live in requirements.txt (generated: make lock).
+pandas>=2.2,<3
+polars
+pyarrow
+numpy
+scipy
+scikit-learn
+xgboost
+lightgbm
+torch
+pytorch-tabnet
+# alibi-detect dropped: current releases conflict with this stack; MMD is implemented in src/xnids/drift/mmd.py
+river
+nfstream
+fastapi
+uvicorn
+httpx
+streamlit
+mlflow
+pyyaml
+gdown
+matplotlib
+seaborn
+pytest
+ruff

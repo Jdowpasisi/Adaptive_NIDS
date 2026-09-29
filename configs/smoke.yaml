@@ -1,0 +1,3 @@
+# Used by scripts/smoke_run.py to check that MLflow logging works end to end.
+run:   {name: smoke, seeds: [0]}
+eval:  {target_dr: 0.95}
