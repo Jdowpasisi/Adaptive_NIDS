@@ -1,0 +1,12 @@
+# Generated from the C1 interim columns; edit by hand only with a reason in the comment.
+# Track B: native NetFlow-v2 fields. Same extractor, different labs.
+# Dropped as identifiers: ipv4_src_addr, ipv4_dst_addr, l4_src_port, and dns_query_id (a random
+# per-transaction id; any signal in it is a tool artefact). l4_dst_port is kept but flagged.
+datasets: [nf_unsw_v2, nf_cse_cic18_v2, nf_ton_v2]
+flagged: [l4_dst_port]
+features: [l4_dst_port, protocol, l7_proto, in_bytes, in_pkts, out_bytes, out_pkts, tcp_flags, client_tcp_flags,
+  server_tcp_flags, flow_duration_milliseconds, duration_in, duration_out, min_ttl, max_ttl, longest_flow_pkt, shortest_flow_pkt,
+  min_ip_pkt_len, max_ip_pkt_len, src_to_dst_second_bytes, dst_to_src_second_bytes, retransmitted_in_bytes, retransmitted_in_pkts,
+  retransmitted_out_bytes, retransmitted_out_pkts, src_to_dst_avg_throughput, dst_to_src_avg_throughput, num_pkts_up_to_128_bytes,
+  num_pkts_128_to_256_bytes, num_pkts_256_to_512_bytes, num_pkts_512_to_1024_bytes, num_pkts_1024_to_1514_bytes,
+  tcp_win_max_in, tcp_win_max_out, icmp_type, icmp_ipv4_type, dns_query_type, dns_ttl_answer, ftp_command_ret_code]

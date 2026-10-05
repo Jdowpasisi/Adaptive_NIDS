@@ -1,0 +1,5 @@
+# Track C: ~15-18 semantically equivalent features across the LycoSTand and NetFlow-v2 families.
+# The feature list and per-family expressions live in core_map.yaml; features marked `drop:` there are excluded.
+datasets: [lycos17, lycos18, nf_unsw_v2, nf_cse_cic18_v2, nf_ton_v2]
+core_map: core_map.yaml
+flagged: [dst_port]

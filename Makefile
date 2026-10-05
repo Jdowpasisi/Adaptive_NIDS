@@ -4,7 +4,7 @@ PY     := $(VENV)/bin/python
 UV     ?= $(shell command -v uv || echo $(HOME)/.local/bin/uv)
 export PYTHONPATH := $(CURDIR)/src
 
-.PHONY: setup lock test lint fmt mlflow smoke ingest tracks split matrix api dashboard reproduce
+.PHONY: setup lock test lint fmt mlflow smoke ingest tracks bridge split matrix api dashboard reproduce
 
 setup:            ## create the venv and install pinned deps + the package
 	$(UV) venv $(VENV) --python 3.11 --allow-existing
@@ -35,6 +35,8 @@ ingest:
 	$(PY) scripts/ingest.py --dataset $(DATASET)
 tracks:
 	$(PY) scripts/build_tracks.py --dataset $(DATASET)
+bridge:           ## H8: validate the core map on LycoS18 vs NF-CSE-CIC-IDS2018-v2
+	$(PY) scripts/bridge_check.py
 split:
 	$(PY) scripts/split.py --dataset $(DATASET)
 TRACK ?= cic77
@@ -44,5 +46,5 @@ api:
 	$(VENV)/bin/uvicorn xnids.live.api:app --host 0.0.0.0 --port 8000
 dashboard:
 	$(VENV)/bin/streamlit run dashboard/app.py
-reproduce: ingest tracks split
+reproduce: ingest bridge tracks split
 	@echo "Remaining reproduce steps are added as components land (see Build_Guide.md)."

@@ -1,0 +1,87 @@
+# Raw label -> attack family. Keys are matched after normalisation (lowercase, any run of non-alphanumerics
+# -> one space), so 'Web Attack – XSS', 'Web Attack � XSS' and 'webattack_xss' differ only where listed.
+# A label that appears in a dataset but not here raises an error in C2; it never falls through to Other.
+#
+# Sources of the strings: reports/tables/labels_<dataset>.csv (C1).
+#   lycos17         labels written by our port of the LycoS labelling script (snake_case)
+#   lycos18         LycoS-Unicas README class names
+#   cic17_orig      original CIC-IDS2017 MachineLearningCSV / GeneratedLabelledFlows
+#   nf_*            the NetFlow-v2 'Attack' column
+
+families:
+  Benign:
+    - benign            # lycos17, lycos18, NF-v2 ('Benign'), cic17_orig ('BENIGN')
+
+  DoS:
+    - dos_hulk
+    - dos_goldeneye
+    - dos_slowloris
+    - dos_slowhttptest
+    - DoS Hulk
+    - DoS GoldenEye
+    - DoS Slowloris
+    - DoS Slowhttptest
+    - DoS attacks-Hulk
+    - DoS attacks-GoldenEye
+    - DoS attacks-Slowloris
+    - DoS attacks-SlowHTTPTest
+    - DoS               # NF-UNSW-NB15
+    - dos               # NF-ToN-IoT
+
+  DDoS:
+    - ddos              # lycos17 (LOIC, Friday), NF-ToN-IoT
+    - DDoS              # cic17_orig
+    - DDoS HOIC
+    - DDoS LOIC-HTTP
+    - DDoS LOIC-UDP
+    - DDOS attack-HOIC
+    - DDoS attacks-LOIC-HTTP
+    - DDOS attack-LOIC-UDP
+
+  Recon:
+    - portscan
+    - PortScan
+    - Reconnaissance    # NF-UNSW-NB15
+    - Analysis          # NF-UNSW-NB15: port scans, spam, HTML-file probes
+    - scanning          # NF-ToN-IoT
+
+  BruteForce:
+    - ftp_patator
+    - ssh_patator
+    - FTP-Patator
+    - SSH-Patator
+    - FTP-BruteForce
+    - SSH-Bruteforce
+    - password          # NF-ToN-IoT: password cracking against services
+
+  WebAttack:
+    - webattack_bruteforce
+    - webattack_xss
+    - webattack_sql_injection
+    - Web Attack - Brute Force      # also matches 'Web Attack – …' / 'Web Attack � …' after normalisation
+    - Web Attack - XSS
+    - Web Attack - Sql Injection
+    - Brute Force -Web              # NF-CSE-CIC-IDS2018: web-login brute force, so WebAttack not BruteForce
+    - Brute Force -XSS
+    - SQL Injection
+    - xss               # NF-ToN-IoT
+    - injection         # NF-ToN-IoT
+
+  Bot/Backdoor:
+    - bot
+    - Bot
+    - Backdoor          # NF-UNSW-NB15
+    - backdoor          # NF-ToN-IoT
+
+  Other:
+    - heartbleed
+    - Heartbleed
+    - Infiltration      # cic17_orig
+    - Infilteration     # NF-CSE-CIC-IDS2018 (sic)
+    - Exploits
+    - Fuzzers
+    - Generic
+    - Shellcode
+    - Worms
+    - mitm
+    - ransomware

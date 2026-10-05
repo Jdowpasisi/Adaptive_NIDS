@@ -1,0 +1,131 @@
+# Core feature map (Track C). One polars-SQL expression per schema family, written against the cleaned
+# interim column names. Write numeric literals in full (1000000.0): the SQL parser rejects 1e6.
+#
+# Units and conventions, from LycoSTand_features.pdf (shipped in the LycoS17 archive) and NetFlow_v2_Features.csv:
+#   LycoSTand: flow_duration in microseconds; *_pkt_len_* are PAYLOAD bytes; *_pkt_hdr_len_* are L4 header
+#              bytes (IP header not counted); flag_* are per-flow packet counts; fwd = initiator -> receiver.
+#   NetFlow-v2: IN_/OUT_BYTES count whole IP packets; FLOW_DURATION_MILLISECONDS in ms; TCP_FLAGS is the
+#              OR of all flags seen (FIN 1, SYN 2, RST 4, PSH 8, ACK 16); IN = src -> dst (client -> server).
+#
+# Validated by scripts/bridge_check.py on LycoS18 vs NF-CSE-CIC-IDS2018-v2 (same PCAPs, different extractor).
+# A feature whose distributions disagree badly on identical traffic gets `drop: <reason>`.
+# Decision rule: drop when the benign-traffic KS > 0.3 (benign is the large, diverse class; within attack
+# families the extractors split flows differently, which is an H8 finding rather than a mapping error).
+# Results: reports/tables/bridge_check_summary.csv (per group: bridge_check.csv).
+
+schema_family:
+  lycos17: cic
+  lycos18: cic
+  nf_unsw_v2: nf
+  nf_cse_cic18_v2: nf
+  nf_ton_v2: nf
+
+features:
+  - name: duration_s
+    cic: flow_duration / 1000000.0
+    nf: flow_duration_milliseconds / 1000.0
+    unit: s
+    caveat: NetFlow has ms resolution; the two extractors use different idle/active timeouts.
+    drop: >-
+      Bridge KS 0.91 on benign. NetFlow-v2 reports duration 0 for 96% of benign flows vs 5% in LycoS18, and
+      for 82-94% of all flows in every NF-v2 dataset (68% of NF-UNSW flows with >10 packets). A broken v2
+      field, not a unit error; NetFlow v3 fixes it.
+
+  - name: pkts_fwd
+    cic: fwd_pkt_cnt
+    nf: in_pkts
+    unit: packets
+    caveat: Direction conventions agree (initiator/client -> responder/server).
+
+  - name: pkts_bwd
+    cic: bwd_pkt_cnt
+    nf: out_pkts
+    unit: packets
+
+  - name: bytes_fwd
+    # rebuild IP bytes for LycoSTand: payload + L4 headers + a 20-byte IPv4 header per packet (no IP options)
+    cic: fwd_pkt_len_tot + fwd_pkt_hdr_len_tot + 20.0 * fwd_pkt_cnt
+    nf: in_bytes
+    unit: IP bytes
+    caveat: LycoSTand counts payload and L4 headers separately; IPv4 options are ignored in the rebuild.
+
+  - name: bytes_bwd
+    cic: bwd_pkt_len_tot + bwd_pkt_hdr_len_tot + 20.0 * bwd_pkt_cnt
+    nf: out_bytes
+    unit: IP bytes
+
+  - name: bytes_per_pkt_fwd
+    cic: CASE WHEN fwd_pkt_cnt > 0 THEN (fwd_pkt_len_tot + fwd_pkt_hdr_len_tot + 20.0 * fwd_pkt_cnt) / fwd_pkt_cnt ELSE 0.0 END
+    nf: CASE WHEN in_pkts > 0 THEN in_bytes / in_pkts ELSE 0.0 END
+    unit: IP bytes / packet
+    caveat: Ratio, so less sensitive to flow-splitting differences than raw byte counts.
+
+  - name: bytes_per_pkt_bwd
+    cic: CASE WHEN bwd_pkt_cnt > 0 THEN (bwd_pkt_len_tot + bwd_pkt_hdr_len_tot + 20.0 * bwd_pkt_cnt) / bwd_pkt_cnt ELSE 0.0 END
+    nf: CASE WHEN out_pkts > 0 THEN out_bytes / out_pkts ELSE 0.0 END
+    unit: IP bytes / packet
+
+  - name: protocol
+    cic: ip_prot
+    nf: protocol
+    unit: IANA protocol number
+
+  - name: pkt_len_max
+    # payload max + IPv4 header + minimal L4 header (TCP 20 / UDP 8); TCP options make this a lower bound
+    cic: pkt_len_max + 20.0 + CASE WHEN ip_prot = 6 THEN 20.0 WHEN ip_prot = 17 THEN 8.0 ELSE 0.0 END
+    nf: longest_flow_pkt
+    unit: IP bytes
+    caveat: LycoSTand reports payload length only; rebuilt with minimal headers, so TCP options are missing.
+
+  - name: pkt_len_min
+    cic: pkt_len_min + 20.0 + CASE WHEN ip_prot = 6 THEN 20.0 WHEN ip_prot = 17 THEN 8.0 ELSE 0.0 END
+    nf: shortest_flow_pkt
+    unit: IP bytes
+    caveat: Same rebuild as pkt_len_max.
+
+  - name: flag_syn
+    cic: CAST(flag_syn > 0 AS FLOAT)
+    nf: CAST((CAST(tcp_flags AS INTEGER) & 2) > 0 AS FLOAT)
+    unit: presence bit
+    caveat: Counts in LycoSTand vs an OR-mask in NetFlow, so both are reduced to presence.
+
+  - name: flag_fin
+    cic: CAST(flag_fin > 0 AS FLOAT)
+    nf: CAST((CAST(tcp_flags AS INTEGER) & 1) > 0 AS FLOAT)
+    unit: presence bit
+
+  - name: flag_rst
+    cic: CAST(flag_rst > 0 AS FLOAT)
+    nf: CAST((CAST(tcp_flags AS INTEGER) & 4) > 0 AS FLOAT)
+    unit: presence bit
+
+  - name: flag_psh
+    cic: CAST(flag_psh > 0 AS FLOAT)
+    nf: CAST((CAST(tcp_flags AS INTEGER) & 8) > 0 AS FLOAT)
+    unit: presence bit
+
+  - name: flag_ack
+    cic: CAST(flag_ack > 0 AS FLOAT)
+    nf: CAST((CAST(tcp_flags AS INTEGER) & 16) > 0 AS FLOAT)
+    unit: presence bit
+
+  - name: init_win_fwd
+    cic: fwd_tcp_init_win_bytes
+    nf: tcp_win_max_in
+    unit: bytes
+    caveat: Initial window (LycoSTand) vs maximum window seen (NetFlow), so approximate by construction.
+    drop: >-
+      Bridge KS 0.38 on benign (median 8192 vs 5638; NetFlow 0 on 47% of flows vs 0.2%). Initial and maximum
+      window are different quantities.
+
+  - name: init_win_bwd
+    cic: bwd_tcp_init_win_bytes
+    nf: tcp_win_max_out
+    unit: bytes
+    drop: Bridge KS 0.45 on benign (median 8192 vs 0). Same definition mismatch as init_win_fwd.
+
+  - name: dst_port
+    cic: dst_port
+    nf: l4_dst_port
+    unit: port
+    caveat: Flagged shortcut feature (rule 9 exception); tested in C4 and C7.
