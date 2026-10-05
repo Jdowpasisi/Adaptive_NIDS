@@ -1,0 +1,20 @@
+# C3 split configuration. Split files are FROZEN after 9 Oct 2026: scripts/split.py refuses to overwrite a
+# split file whose hash differs unless `version` is bumped (and then everything downstream must be re-run).
+version: 1
+seed: 0
+fractions: {train: 0.6, val: 0.2, test: 0.2}
+block_minutes: 5          # time_block scheme only
+
+# dedup_track: the dataset's richest native track; exact duplicates / label conflicts are judged on it.
+datasets:
+  lycos17:         {scheme: time_block, dedup_track: cic77}
+  lycos18:         {scheme: stratified, dedup_track: cic77}      # no timestamp in the published CSV
+  nf_unsw_v2:      {scheme: stratified, dedup_track: nf43}       # NF-v2 has no timestamps
+  nf_cse_cic18_v2: {scheme: stratified, dedup_track: nf43}
+  nf_ton_v2:       {scheme: stratified, dedup_track: nf43}
+  cic17_orig:      {scheme: stratified, dedup_track: cic_orig}   # timestamps are minute-resolution 12h strings
+
+# Laptop dev subsample (used by the C5 harness via data.max_rows_per_split); final numbers use full splits.
+dev:
+  max_rows_per_split: 2000000
+  min_per_family: 5000

@@ -1,0 +1,2 @@
+dataset,dedup_track,scheme,split_hash,rows_in,duplicates_dropped,conflict_rows_dropped,conflict_vectors_dropped,rows_kept,n_train,n_val,n_test
+nf_unsw_v2,nf43,stratified,f99db004df,2390275,1634749,28786,1259,726740,436301,145269,145170

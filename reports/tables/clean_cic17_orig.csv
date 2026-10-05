@@ -1,0 +1,2 @@
+dataset,dedup_track,scheme,split_hash,rows_in,duplicates_dropped,conflict_rows_dropped,conflict_vectors_dropped,rows_kept,n_train,n_val,n_test
+cic17_orig,cic_orig,stratified,3c3cebcc59,2830743,325496,7144,719,2498103,1499040,499670,499393
