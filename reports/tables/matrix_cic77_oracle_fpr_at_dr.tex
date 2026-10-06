@@ -1,0 +1,26 @@
+\begin{table}
+\caption{oracle_fpr_at_dr (\%), track cic77: mean $\pm$ std over seeds. Rows: model and training dataset; columns: test dataset.}
+\label{tab:matrix_cic77_oracle_fpr_at_dr}
+\begin{tabular}{llll}
+\toprule
+ & target & lycos17 & lycos18 \\
+model & source &  &  \\
+\midrule
+ae & lycos17 & 4.33 & 85.77 \\
+\cline{1-4}
+dt & lycos17 & 0.31 & 89.09 \\
+\cline{1-4}
+\multirow[t]{2}{*}{lda} & lycos17 & 3.86 ± 0.00 & 87.02 ± 0.00 \\
+ & lycos18 & 26.74 ± 0.00 & 1.30 ± 0.00 \\
+\cline{1-4}
+mlp & lycos17 & 0.28 & 83.88 \\
+\cline{1-4}
+rf & lycos17 & 0.28 & 100.00 \\
+\cline{1-4}
+tabnet & lycos17 & 0.30 & 41.35 \\
+\cline{1-4}
+xgb & lycos17 & 0.29 & 84.91 \\
+\cline{1-4}
+\bottomrule
+\end{tabular}
+\end{table}

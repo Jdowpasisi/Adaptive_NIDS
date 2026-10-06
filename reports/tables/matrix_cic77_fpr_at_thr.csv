@@ -1,0 +1,9 @@
+model,source,lycos17,lycos18
+ae,lycos17,3.95,68.10
+dt,lycos17,0.31,2.34
+lda,lycos17,0.55 ± 0.00,5.04 ± 0.00
+lda,lycos18,16.10 ± 0.00,1.30 ± 0.00
+mlp,lycos17,0.13,0.08
+rf,lycos17,0.21,0.00
+tabnet,lycos17,0.25,1.05
+xgb,lycos17,0.13,0.00

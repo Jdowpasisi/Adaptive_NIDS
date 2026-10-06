@@ -1,0 +1,26 @@
+\begin{table}
+\caption{dr_at_thr (\%), track cic77: mean $\pm$ std over seeds. Rows: model and training dataset; columns: test dataset.}
+\label{tab:matrix_cic77_dr_at_thr}
+\begin{tabular}{llll}
+\toprule
+ & target & lycos17 & lycos18 \\
+model & source &  &  \\
+\midrule
+ae & lycos17 & 93.91 & 46.66 \\
+\cline{1-4}
+dt & lycos17 & 90.82 & 2.84 \\
+\cline{1-4}
+\multirow[t]{2}{*}{lda} & lycos17 & 82.71 ± 0.00 & 0.24 ± 0.00 \\
+ & lycos18 & 82.26 ± 0.00 & 95.00 ± 0.00 \\
+\cline{1-4}
+mlp & lycos17 & 84.36 & 0.06 \\
+\cline{1-4}
+rf & lycos17 & 86.89 & 0.00 \\
+\cline{1-4}
+tabnet & lycos17 & 85.70 & 0.07 \\
+\cline{1-4}
+xgb & lycos17 & 82.99 & 0.00 \\
+\cline{1-4}
+\bottomrule
+\end{tabular}
+\end{table}

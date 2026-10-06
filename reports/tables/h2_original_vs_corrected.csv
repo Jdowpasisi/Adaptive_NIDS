@@ -1,0 +1,2 @@
+# Confound: the original release uses CICFlowMeter features and the corrected release uses LycoSTand, and the original is split at random while LycoS17 uses time blocks. The difference is therefore 'original release vs corrected release' (extractor + labels + split scheme), not label errors alone.
+
