@@ -1,0 +1,373 @@
+{
+ "cic77": {
+  "lycos17|lycos18": {
+   "benign": [
+    "flag_ece",
+    "flag_cwr",
+    "dst_port",
+    "bwd_iat_min",
+    "bwd_tcp_init_win_bytes",
+    "flag_rst",
+    "fwd_iat_tot",
+    "fwd_pkt_len_tot",
+    "fwd_subflow_bytes_mean",
+    "fwd_iat_max",
+    "fwd_iat_mean",
+    "iat_min",
+    "fwd_iat_min"
+   ],
+   "all": [
+    "flag_ece",
+    "flag_cwr",
+    "bwd_pkt_len_max",
+    "pkt_len_max",
+    "bwd_pkt_len_std",
+    "pkt_len_var",
+    "pkt_len_std",
+    "bwd_pkt_len_mean",
+    "bwd_iat_min",
+    "pkt_len_mean"
+   ]
+  }
+ },
+ "nf43": {
+  "nf_unsw_v2|nf_cse_cic18_v2": {
+   "benign": [
+    "min_ip_pkt_len",
+    "shortest_flow_pkt",
+    "l4_dst_port",
+    "min_ttl",
+    "max_ttl",
+    "retransmitted_out_pkts",
+    "retransmitted_in_bytes",
+    "retransmitted_out_bytes",
+    "tcp_win_max_in",
+    "tcp_win_max_out"
+   ],
+   "all": [
+    "min_ttl",
+    "l4_dst_port",
+    "max_ttl",
+    "retransmitted_out_pkts",
+    "retransmitted_out_bytes",
+    "retransmitted_in_bytes",
+    "tcp_win_max_out",
+    "min_ip_pkt_len",
+    "shortest_flow_pkt",
+    "retransmitted_in_pkts"
+   ]
+  },
+  "nf_unsw_v2|nf_ton_v2": {
+   "benign": [
+    "retransmitted_out_bytes",
+    "retransmitted_out_pkts",
+    "out_pkts",
+    "dst_to_src_avg_throughput",
+    "out_bytes",
+    "src_to_dst_avg_throughput",
+    "retransmitted_in_bytes",
+    "retransmitted_in_pkts",
+    "server_tcp_flags",
+    "icmp_ipv4_type"
+   ],
+   "all": [
+    "retransmitted_in_pkts",
+    "out_pkts",
+    "retransmitted_in_bytes",
+    "icmp_type",
+    "icmp_ipv4_type",
+    "retransmitted_out_pkts",
+    "dst_to_src_avg_throughput",
+    "retransmitted_out_bytes",
+    "in_pkts",
+    "src_to_dst_avg_throughput"
+   ]
+  },
+  "nf_cse_cic18_v2|nf_ton_v2": {
+   "benign": [
+    "max_ttl",
+    "min_ttl",
+    "l4_dst_port",
+    "out_bytes",
+    "server_tcp_flags",
+    "shortest_flow_pkt",
+    "out_pkts",
+    "num_pkts_128_to_256_bytes",
+    "tcp_flags",
+    "dst_to_src_avg_throughput"
+   ],
+   "all": [
+    "max_ttl",
+    "min_ttl",
+    "tcp_flags",
+    "client_tcp_flags",
+    "tcp_win_max_in",
+    "l4_dst_port",
+    "num_pkts_512_to_1024_bytes",
+    "out_pkts",
+    "out_bytes",
+    "num_pkts_up_to_128_bytes"
+   ]
+  }
+ },
+ "core": {
+  "lycos17|lycos18": {
+   "benign": [
+    "dst_port",
+    "pkt_len_max",
+    "bytes_fwd",
+    "bytes_per_pkt_fwd",
+    "flag_rst",
+    "bytes_per_pkt_bwd",
+    "bytes_bwd",
+    "protocol",
+    "pkt_len_min",
+    "pkts_fwd"
+   ],
+   "all": [
+    "pkt_len_max",
+    "bytes_per_pkt_bwd",
+    "bytes_bwd",
+    "pkts_bwd",
+    "bytes_fwd",
+    "bytes_per_pkt_fwd",
+    "dst_port",
+    "flag_psh",
+    "pkts_fwd"
+   ]
+  },
+  "lycos17|nf_unsw_v2": {
+   "benign": [
+    "dst_port",
+    "pkts_bwd",
+    "pkts_fwd",
+    "bytes_fwd",
+    "bytes_bwd",
+    "pkt_len_min",
+    "pkt_len_max",
+    "bytes_per_pkt_bwd",
+    "bytes_per_pkt_fwd",
+    "flag_fin"
+   ],
+   "all": [
+    "dst_port",
+    "pkts_bwd",
+    "pkts_fwd",
+    "bytes_fwd",
+    "bytes_bwd",
+    "pkt_len_min",
+    "pkt_len_max",
+    "bytes_per_pkt_fwd",
+    "bytes_per_pkt_bwd",
+    "flag_fin"
+   ]
+  },
+  "lycos17|nf_cse_cic18_v2": {
+   "benign": [
+    "flag_syn",
+    "pkts_bwd",
+    "dst_port",
+    "pkt_len_max",
+    "protocol",
+    "pkt_len_min",
+    "flag_rst",
+    "pkts_fwd",
+    "bytes_fwd",
+    "bytes_bwd"
+   ],
+   "all": [
+    "pkts_fwd",
+    "pkts_bwd",
+    "bytes_fwd",
+    "pkt_len_max",
+    "bytes_per_pkt_bwd",
+    "bytes_bwd",
+    "flag_syn",
+    "bytes_per_pkt_fwd",
+    "protocol",
+    "pkt_len_min"
+   ]
+  },
+  "lycos17|nf_ton_v2": {
+   "benign": [
+    "dst_port",
+    "bytes_per_pkt_bwd",
+    "pkt_len_max",
+    "bytes_per_pkt_fwd",
+    "pkt_len_min",
+    "bytes_bwd",
+    "pkts_bwd",
+    "bytes_fwd",
+    "flag_psh",
+    "pkts_fwd"
+   ],
+   "all": [
+    "dst_port",
+    "bytes_per_pkt_bwd",
+    "pkt_len_min",
+    "pkt_len_max",
+    "bytes_bwd",
+    "protocol",
+    "bytes_per_pkt_fwd",
+    "pkts_bwd",
+    "bytes_fwd",
+    "pkts_fwd"
+   ]
+  },
+  "lycos18|nf_unsw_v2": {
+   "benign": [
+    "dst_port",
+    "pkts_bwd",
+    "pkts_fwd",
+    "bytes_fwd",
+    "pkt_len_min",
+    "bytes_bwd",
+    "bytes_per_pkt_fwd",
+    "bytes_per_pkt_bwd",
+    "pkt_len_max",
+    "flag_fin"
+   ],
+   "all": [
+    "dst_port",
+    "pkts_fwd",
+    "pkts_bwd",
+    "pkt_len_min",
+    "bytes_fwd",
+    "bytes_bwd",
+    "bytes_per_pkt_bwd",
+    "pkt_len_max",
+    "bytes_per_pkt_fwd"
+   ]
+  },
+  "lycos18|nf_cse_cic18_v2": {
+   "benign": [
+    "pkts_bwd",
+    "pkts_fwd",
+    "bytes_bwd",
+    "bytes_fwd",
+    "pkt_len_max",
+    "bytes_per_pkt_bwd",
+    "bytes_per_pkt_fwd",
+    "dst_port",
+    "flag_rst",
+    "flag_syn"
+   ],
+   "all": [
+    "pkts_bwd",
+    "bytes_bwd",
+    "pkts_fwd",
+    "bytes_fwd",
+    "pkt_len_max",
+    "bytes_per_pkt_bwd",
+    "bytes_per_pkt_fwd",
+    "dst_port",
+    "flag_syn",
+    "protocol"
+   ]
+  },
+  "lycos18|nf_ton_v2": {
+   "benign": [
+    "dst_port",
+    "bytes_per_pkt_bwd",
+    "pkt_len_max",
+    "pkt_len_min",
+    "bytes_per_pkt_fwd",
+    "bytes_bwd",
+    "bytes_fwd",
+    "pkts_bwd",
+    "flag_psh",
+    "pkts_fwd"
+   ],
+   "all": [
+    "dst_port",
+    "bytes_per_pkt_bwd",
+    "pkt_len_min",
+    "pkt_len_max",
+    "bytes_per_pkt_fwd",
+    "bytes_bwd",
+    "bytes_fwd",
+    "pkts_fwd",
+    "pkts_bwd",
+    "protocol"
+   ]
+  },
+  "nf_unsw_v2|nf_cse_cic18_v2": {
+   "benign": [
+    "pkt_len_min",
+    "dst_port",
+    "pkts_fwd",
+    "pkts_bwd",
+    "bytes_fwd",
+    "pkt_len_max",
+    "bytes_per_pkt_fwd",
+    "bytes_bwd",
+    "bytes_per_pkt_bwd",
+    "flag_rst"
+   ],
+   "all": [
+    "dst_port",
+    "pkt_len_min",
+    "pkts_fwd",
+    "pkts_bwd",
+    "bytes_per_pkt_fwd",
+    "bytes_bwd",
+    "bytes_per_pkt_bwd",
+    "pkt_len_max",
+    "bytes_fwd",
+    "flag_rst"
+   ]
+  },
+  "nf_unsw_v2|nf_ton_v2": {
+   "benign": [
+    "pkts_bwd",
+    "bytes_bwd",
+    "pkts_fwd",
+    "bytes_per_pkt_bwd",
+    "bytes_fwd",
+    "pkt_len_max",
+    "flag_psh",
+    "bytes_per_pkt_fwd",
+    "dst_port",
+    "flag_syn"
+   ],
+   "all": [
+    "pkts_bwd",
+    "pkts_fwd",
+    "bytes_bwd",
+    "bytes_fwd",
+    "bytes_per_pkt_bwd",
+    "dst_port",
+    "pkt_len_max",
+    "bytes_per_pkt_fwd",
+    "pkt_len_min",
+    "flag_psh"
+   ]
+  },
+  "nf_cse_cic18_v2|nf_ton_v2": {
+   "benign": [
+    "dst_port",
+    "bytes_bwd",
+    "pkt_len_min",
+    "pkts_bwd",
+    "bytes_per_pkt_bwd",
+    "pkt_len_max",
+    "pkts_fwd",
+    "bytes_fwd",
+    "flag_psh",
+    "bytes_per_pkt_fwd"
+   ],
+   "all": [
+    "dst_port",
+    "pkts_bwd",
+    "bytes_bwd",
+    "bytes_per_pkt_bwd",
+    "pkts_fwd",
+    "bytes_per_pkt_fwd",
+    "pkt_len_max",
+    "bytes_fwd",
+    "pkt_len_min",
+    "flag_psh"
+   ]
+  }
+ }
+}

@@ -1,0 +1,20 @@
+# C4 adversarial validation.
+run: {name: advval, seeds: [0, 1, 2]}
+
+sample_per_domain: 100000    # rows per domain per run (Build Guide uses 200k; on LycoS17 vs LycoS18 benign, 50k and 100k gave AUC 0.9992 vs 0.9994)
+cv_folds: 5
+auc_stop: 0.7                # stop removing once domains are this hard to tell apart
+max_removed: 10
+subsets: [benign, all]
+
+model:                       # LightGBM settings from the Build Guide; early stopping caps the trees used
+  n_estimators: 300
+  learning_rate: 0.05
+  num_leaves: 63
+  n_jobs: -1
+
+# Unordered pairs: domain classification is symmetric. `all_pairs` expands to every pair of the track's datasets.
+tracks:
+  cic77: all_pairs
+  nf43: all_pairs
+  core: all_pairs

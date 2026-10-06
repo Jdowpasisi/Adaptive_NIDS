@@ -4,7 +4,7 @@ PY     := $(VENV)/bin/python
 UV     ?= $(shell command -v uv || echo $(HOME)/.local/bin/uv)
 export PYTHONPATH := $(CURDIR)/src
 
-.PHONY: setup lock test lint fmt mlflow smoke ingest tracks bridge split check-splits matrix api dashboard reproduce
+.PHONY: setup lock test lint fmt mlflow smoke ingest tracks bridge split check-splits advval matrix api dashboard reproduce
 
 setup:            ## create the venv and install pinned deps + the package
 	$(UV) venv $(VENV) --python 3.11 --allow-existing
@@ -41,6 +41,8 @@ split:
 	$(PY) scripts/split.py --dataset $(DATASET)
 check-splits:     ## verify frozen split files against configs/split.yaml and the committed lock
 	$(PY) scripts/split.py --dataset all --check
+advval:           ## C4: adversarial validation for every pair (resumable; ~4 h for all tracks)
+	$(PY) scripts/advval.py
 TRACK ?= cic77
 matrix:
 	$(PY) scripts/matrix.py --track $(TRACK)
