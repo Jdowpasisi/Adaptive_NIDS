@@ -62,3 +62,33 @@ importance is gain. At each step the top feature is removed, up to 10 times or u
 
 Hand-off: `reports/tables/advval_lab_features.json` holds the consensus removal order per track, pair and subset
 (mean position across seeds). C7 ablates its top-k; C8 checks its drift explanations against it.
+
+## C5: harness acceptance run (LycoS17 → LycoS18, cic77, seed 0, dev subsample)
+
+Source: the MLflow experiment `train` (one run per model, tags model / track / source / seed). These are
+single-seed sanity numbers. C6 reports mean ± std over 3 seeds.
+
+| Model | Within: FPR @ thr | Within: DR @ thr | Within MCC | Cross: FPR @ thr | Cross: DR @ thr | Cross oracle FPR@95%DR | Cross PR-AUC |
+|---|---|---|---|---|---|---|---|
+| LDA | 0.0055 | 0.827 | 0.876 | 0.0504 | 0.0024 | 0.870 | 0.296 |
+| DT | 0.0031 | 0.908 | 0.935 | 0.0234 | 0.0284 | 0.891 | 0.344 |
+| RF | 0.0021 | 0.869 | 0.913 | 0.0000 | 0.0000 | 1.000 | 0.456 |
+| XGB | 0.0013 | 0.830 | 0.891 | 0.0000 | 0.0000 | 0.849 | 0.538 |
+| MLP | 0.0013 | 0.844 | 0.900 | 0.0008 | 0.0006 | 0.839 | 0.277 |
+| AE | 0.0395 | 0.939 | 0.858 | 0.6810 | 0.4666 | 0.858 | 0.267 |
+| TabNet | 0.0025 | 0.857 | 0.904 | 0.0105 | 0.0007 | 0.414 | 0.472 |
+
+- **The sanity gate passes:** within-dataset MCC on LycoS17 is 0.86–0.94, in line with Cantone et al.'s 94.63%
+  within-dataset average.
+- **The collapse is total for the supervised models.** At the frozen source threshold they catch 0–3% of LycoS18
+  attacks (Cantone et al.'s worst pair is this same LycoS17 → LycoS18, MCC 10.83%). This is not just
+  miscalibration: even the oracle threshold needs FPR 0.41–1.00 to catch 95%, so the ranking itself breaks.
+  TabNet's ranking survives best (oracle FPR 0.41).
+- **The autoencoder fails the other way.** It flags 68% of LycoS18 benign traffic, because a new network's normal
+  traffic looks anomalous. The supervised models stay quiet and miss the attacks; the anomaly detector raises
+  floods of false alarms.
+- **Within-dataset DR at the frozen threshold is 0.83–0.94, not 0.95.** LycoS17's time-block split puts
+  different time blocks, and so different attack bursts, into val and test. The attack mix shifts (Recon is 21.9%
+  of val attacks vs 15.1% of test; DoS 49.3% vs 53.0%), and bursts of the same family can differ too. So even inside
+  one dataset, a threshold set on one period does not hold its DR on another. This is a small-scale preview of H4,
+  and C7 can separate the two causes.
