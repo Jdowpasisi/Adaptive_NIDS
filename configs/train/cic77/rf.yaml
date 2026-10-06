@@ -1,0 +1,3 @@
+_base: ../models/rf.yaml
+run: {name: rf_cic77}
+data: {track: cic77}

@@ -1,0 +1,3 @@
+_base: ../models/mlp.yaml
+run: {name: mlp_nf43}
+data: {track: nf43}

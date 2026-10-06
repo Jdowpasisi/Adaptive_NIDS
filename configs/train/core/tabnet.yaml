@@ -1,0 +1,3 @@
+_base: ../models/tabnet.yaml
+run: {name: tabnet_core}
+data: {track: core}

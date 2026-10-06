@@ -1,16 +1,20 @@
 """Thin MLflow wrapper so every run carries its config, config hash, git commit and seed."""
 
-import subprocess
-import tempfile
-from collections.abc import Iterator
-from contextlib import contextmanager
-from pathlib import Path
+import os
 
-import mlflow
-import pandas as pd
+os.environ.setdefault("MLFLOW_DISABLE_AGENT_HINT", "1")   # must precede `import mlflow`
 
-from xnids.utils import paths
-from xnids.utils.config import cfg_hash, flatten
+import subprocess  # noqa: E402
+import tempfile  # noqa: E402
+from collections.abc import Iterator  # noqa: E402
+from contextlib import contextmanager  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+import mlflow  # noqa: E402
+import pandas as pd  # noqa: E402
+
+from xnids.utils import paths  # noqa: E402
+from xnids.utils.config import cfg_hash, flatten  # noqa: E402
 
 
 def git_state() -> tuple[str, bool]:

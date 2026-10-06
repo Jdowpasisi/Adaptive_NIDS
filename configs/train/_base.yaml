@@ -1,0 +1,11 @@
+# Shared C5 settings. Each configs/train/<track>/<model>.yaml inherits this (via the model's file).
+experiment: train
+run: {seeds: [0, 1, 2]}
+data:
+  source: all                    # train once per dataset in the track; the run logs the resolved single source
+  targets: all                   # every dataset in the track; the source itself is the within-dataset cell
+  max_rows_per_split: 2000000    # laptop dev subsample (null = full splits, e.g. on Kaggle)
+  min_per_family: 5000
+  dev_seed: 0                    # the subsample is identical for every model and seed
+eval: {target_dr: 0.95, metrics: [fpr_at_thr, dr_at_thr, pr_auc, mcc_at_thr, roc_auc, oracle_fpr_at_dr]}
+model: {device: auto}

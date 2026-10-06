@@ -1,0 +1,3 @@
+_base: ../models/ae.yaml
+run: {name: ae_core}
+data: {track: core}
