@@ -1,0 +1,16 @@
+# C6: which (track, model) configs make up the results matrix, in run order (Mid-Sem priority first).
+# Each entry is configs/train/<track>/<model>.yaml; every source of the track x seeds [0, 1, 2].
+experiment: train
+sweep:
+  cic77:    [lda, dt, rf, xgb, mlp, ae, tabnet]    # Build Guide: all 7 x 3 seeds
+  nf43:     [lda, rf, xgb, mlp, dt, ae, tabnet]    # minimum: LDA, RF, XGB, MLP
+  cic_orig: [lda, dt, rf, xgb, mlp, ae, tabnet]    # H2: original-release baseline (within only)
+  core:     [rf, mlp, lda, xgb]                    # minimum: RF, MLP
+
+# Cantone, Marrocco & Bria (2024), IEEE Access 12, MCC averaged over LDA/DT/RF/XGB.
+cantone:
+  within_avg_mcc: 0.9463
+  cross_avg_mcc: 0.2935
+  lycos17_to_lycos18_mcc: 0.1083          # their worst cross pair
+  lda_lycos18_to_lycos17_mcc: 0.6041      # their best single cross result
+  models: [lda, dt, rf, xgb]

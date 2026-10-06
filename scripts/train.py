@@ -21,6 +21,7 @@ def main() -> None:
     ap.add_argument("--config", required=True)
     ap.add_argument("--source", default=None, help="restrict to one source dataset")
     ap.add_argument("--seeds", default=None, help="comma list, e.g. 0 or 0,1,2 (default: from config)")
+    ap.add_argument("--resume", action="store_true", help="skip (config hash, seed) runs that already finished")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(asctime)s %(message)s", datefmt="%H:%M:%S")
     for noisy in ("mlflow", "alembic", "urllib3"):
@@ -29,7 +30,7 @@ def main() -> None:
     if args.source:
         cfg["data"]["source"] = args.source
     seeds = [int(s) for s in args.seeds.split(",")] if args.seeds else None
-    table = harness.run_config(cfg, seeds)
+    table = harness.run_config(cfg, seeds, resume=args.resume)
     cols = ["model", "source", "target", "kind", "seed", "fpr_at_thr", "dr_at_thr", "oracle_fpr_at_dr", "pr_auc",
             "mcc_at_thr"]
     with pd.option_context("display.width", 200, "display.max_columns", 20):

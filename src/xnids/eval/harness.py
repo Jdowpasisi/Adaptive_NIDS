@@ -146,9 +146,27 @@ def run_one(cfg: dict, seed_: int) -> dict:
         return {"run_id": run.info.run_id, "version": version, "metrics": table}
 
 
-def run_config(cfg: dict, seeds: list[int] | None = None) -> pd.DataFrame:
+def finished_run(cfg: dict, seed_: int) -> str | None:
+    """run_id of the latest FINISHED run of this exact resolved config and seed, if any."""
+    runs = log.find_runs(experiment=cfg.get("experiment", "train"), finished_only=True,
+                         cfg_hash=config.cfg_hash(cfg), seed=str(seed_))
+    return None if runs.empty else str(runs.sort_values("start_time")["run_id"].iloc[-1])
+
+
+def logged_metrics(run_id: str) -> pd.DataFrame:
+    return pd.read_parquet(mlflow.artifacts.download_artifacts(run_id=run_id, artifact_path="metrics.parquet"))
+
+
+def run_config(cfg: dict, seeds: list[int] | None = None, resume: bool = False) -> pd.DataFrame:
+    """Run every (source, seed) of the config. With resume=True, a (config hash, seed) that already has a
+    FINISHED run is not re-trained; its logged metrics are returned instead."""
     out = []
     for c in expand(cfg):
         for s in seeds if seeds is not None else c["run"]["seeds"]:
-            out.append(run_one(c, s)["metrics"])
+            done = finished_run(c, s) if resume else None
+            if done:
+                LOG.info("skip %s %s seed %d: finished run %s", c["model"]["name"], c["data"]["source"], s, done)
+                out.append(logged_metrics(done))
+            else:
+                out.append(run_one(c, s)["metrics"])
     return pd.concat(out, ignore_index=True) if out else pd.DataFrame()

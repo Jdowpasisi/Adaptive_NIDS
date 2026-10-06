@@ -65,8 +65,12 @@ def log_df_artifact(df: pd.DataFrame, name: str) -> None:
         mlflow.log_artifact(str(p))
 
 
-def find_runs(experiment: str = "driftguard", **tags: str) -> pd.DataFrame:
-    """All runs whose tags match, e.g. find_runs(cfg_hash='ab12cd34ef')."""
+def find_runs(experiment: str = "driftguard", finished_only: bool = False, **tags: str) -> pd.DataFrame:
+    """All runs whose tags match, e.g. find_runs(cfg_hash='ab12cd34ef'). Empty frame if the experiment is new."""
     mlflow.set_tracking_uri(paths.TRACKING_URI)
-    filt = " and ".join(f"tags.{k} = '{v}'" for k, v in tags.items())
-    return mlflow.search_runs(experiment_names=[experiment], filter_string=filt)
+    if mlflow.get_experiment_by_name(experiment) is None:
+        return pd.DataFrame()
+    conds = [f"tags.{k} = '{v}'" for k, v in tags.items()]
+    if finished_only:
+        conds.append("attributes.status = 'FINISHED'")
+    return mlflow.search_runs(experiment_names=[experiment], filter_string=" and ".join(conds))

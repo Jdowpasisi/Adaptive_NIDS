@@ -82,3 +82,13 @@ def test_expand_all_sources_and_within_cell(toy):
 def test_dev_subsample_applies(toy):
     s = harness.load_split("a", "toy", "train", max_rows=500, min_per_family=50)
     assert 300 < len(s.y) < 800 and s.y.sum() >= 50
+
+
+def test_resume_skips_finished_runs(toy):
+    from xnids.utils import log
+
+    first = harness.run_config(CFG)
+    again = harness.run_config(CFG, resume=True)
+    assert len(log.find_runs(experiment="t")) == 2                 # nothing re-trained
+    pd.testing.assert_frame_equal(first.sort_values(["seed", "target"]).reset_index(drop=True),
+                                  again.sort_values(["seed", "target"]).reset_index(drop=True))
