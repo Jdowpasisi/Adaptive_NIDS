@@ -38,7 +38,9 @@ SLOT1, SLOT2, SLOT3 = "#2a78d6", "#eb6834", "#1baf7a"
 def windows(X: pl.DataFrame, n_windows: int, size: int, rng: np.random.Generator) -> list[pl.DataFrame]:
     n_windows = min(n_windows, X.height // size)
     idx = rng.permutation(X.height)[: n_windows * size]
-    return [X[np.sort(idx[i * size:(i + 1) * size])] for i in range(n_windows)]
+    # random order WITHIN each window too: file order groups flows by class (e.g. NF-ToN), which ADWIN, the only
+    # order-sensitive detector, would otherwise flag as a change inside a drift-free window
+    return [X[idx[i * size:(i + 1) * size]] for i in range(n_windows)]
 
 
 def mixed(Xs: pl.DataFrame, Xt: pl.DataFrame, n_windows: int, size: int, rng) -> tuple[list, list[float]]:
@@ -48,7 +50,8 @@ def mixed(Xs: pl.DataFrame, Xt: pl.DataFrame, n_windows: int, size: int, rng) ->
         nt = int(round(share * size))
         a = Xs[np.sort(rng.choice(Xs.height, size - nt, replace=False))]
         b = Xt[np.sort(rng.choice(Xt.height, nt, replace=False))]
-        out.append(pl.concat([a, b]))
+        ab = pl.concat([a, b])
+        out.append(ab[rng.permutation(ab.height)])
         shares.append(share)
     return out, shares
 

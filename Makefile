@@ -5,7 +5,7 @@ UV     ?= $(shell command -v uv || echo $(HOME)/.local/bin/uv)
 export PYTHONPATH := $(CURDIR)/src
 export MLFLOW_DISABLE_AGENT_HINT := 1
 
-.PHONY: setup lock test lint fmt mlflow smoke ingest tracks bridge split check-splits advval train matrix api dashboard reproduce
+.PHONY: setup lock test lint fmt mlflow smoke ingest tracks bridge split check-splits advval train matrix backup api dashboard reproduce
 
 setup:            ## create the venv and install pinned deps + the package
 	$(UV) venv $(VENV) --python 3.11 --allow-existing
@@ -47,6 +47,8 @@ advval:           ## C4: adversarial validation for every pair (resumable; ~4 h 
 CONFIG ?= configs/train/cic77/lda.yaml
 train:            ## C5: make train CONFIG=configs/train/<track>/<model>.yaml [ARGS='--source lycos17 --seeds 0']
 	$(PY) scripts/train.py --config $(CONFIG) $(ARGS)
+backup:           ## copy mlflow.db (consistent snapshot), mlruns, models, splits to ~/driftguard_backup
+	scripts/backup.sh
 TRACK ?= cic77
 matrix:
 	$(PY) scripts/matrix.py --track $(TRACK)
