@@ -74,7 +74,7 @@ def train_loop(net: nn.Module, loss_fn, Xtr: torch.Tensor, Ytr: torch.Tensor | N
     gen = torch.Generator().manual_seed(seed)
     opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
     best, best_state, bad, history = float("inf"), None, 0, []
-    for epoch in range(max_epochs):
+    for _epoch in range(max_epochs):
         net.train()
         for idx in batches(len(Xtr), batch_size, gen, Xtr.device):
             if len(idx) < 2:          # BatchNorm needs >1 sample

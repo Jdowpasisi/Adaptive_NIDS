@@ -66,10 +66,22 @@ def test_tent_changes_only_bn_affine(setup):
     assert all(id(p) in bn_params for n, p in nb.model.net.named_parameters() if n in changed)
 
 
-def test_tent_guard_stops(setup):
+@pytest.mark.parametrize("rate,prev,expect", [
+    (0.90, 0.30, True),     # runs away above 2x the source rate
+    (0.10, 0.20, True),     # collapsing toward "all benign" and still falling
+    (0.10, 0.05, False),    # a silent model climbing back toward the source rate is allowed
+    (0.30, 0.25, False),    # inside the band
+])
+def test_tent_guard_rule(rate, prev, expect):
+    from xnids.adapt.tent import guard_violation
+
+    assert guard_violation(rate, prev, r_src=0.3, factor=2.0) is expect
+
+
+def test_tent_records_guard_reference(setup):
     b, ctx = setup
-    nb = adapt.get("tent", guard_factor=1.0000001, lr=0.5).adapt(b, ctx)
-    assert nb.meta["tent_guard_stop"]
+    nb = adapt.get("tent").adapt(b, ctx)
+    assert 0 < nb.meta["tent_source_attack_rate"] <= 1 and isinstance(nb.meta["tent_guard_stop"], bool)
 
 
 @pytest.mark.parametrize("name,params", [("scaling", {}), ("adabn", {}), ("tent", {}), ("coral", {"epochs": 1}),
