@@ -46,7 +46,8 @@ def plan(acfg: dict, part: str, pair_idx: list[int] | None) -> list[tuple[dict, 
                         "experiment": acfg["experiment"], "study": acfg["study"],
                         "run": {"name": f"{m}_{track}_abl_k{k}", "seeds": acfg["seeds"], "save_bundle": False},
                         "data": {"source": src, "targets": [tgt], "drop_features": ranking[:k]}})
-                    out.append((harness.expand(c)[0], {"part": "ablation", "k": k, "removed": ";".join(ranking[:k])}))
+                    out.append((harness.expand(c)[0], {"part": "ablation", "k": k, "removed": ";".join(ranking[:k]),
+                                                       "pair_target": tgt}))
     if part in ("all", "norm"):
         nc = acfg["normalisation"]
         for track in nc["tracks"]:
@@ -56,7 +57,7 @@ def plan(acfg: dict, part: str, pair_idx: list[int] | None) -> list[tuple[dict, 
                     "experiment": acfg["experiment"], "study": acfg["study"],
                     "run": {"name": f"{m}_{track}_rank", "seeds": acfg["seeds"], "save_bundle": False},
                     "data": {"domain_norm": "rank"}})
-                out += [(e, {"part": "norm", "k": -1, "removed": ""}) for e in harness.expand(c)]
+                out += [(e, {"part": "norm", "k": -1, "removed": "", "pair_target": "all"}) for e in harness.expand(c)]
     return out
 
 
@@ -144,7 +145,8 @@ def main() -> None:
         return
     long.to_csv(paths.TABLES / "c7_long.csv", index=False)
     ref = reference()
-    keys = ["track", "model", "source", "target", "kind", "k"]
+    keys = ["track", "model", "source", "target", "kind", "k", "pair_target"]   # pair_target keeps each pair's
+    # within row (same source, different features dropped) with that pair's cross row
     g = long.groupby(keys)
     agg = g[matrix.HEADLINE].mean().add_suffix("_mean").join(g["seed"].nunique().rename("n_seeds")).reset_index()
     tracks_of = agg[["track", "source"]].drop_duplicates()

@@ -216,3 +216,61 @@ Setup:
 - **Evaluation bug caught and fixed:** windows were first built in file order. NF-ToN files group flows by class,
   which made ADWIN, the only order-sensitive detector, fire on 100% of NF-ToN null windows. Windows are now
   randomly ordered, and ADWIN's null false-alarm rate is 0.
+
+## C7: decomposition (H3) and time drift (H4)
+
+Sources:
+- `reports/tables/c7_long.csv` (333 runs, MLflow experiment `c7`, tag `study=c7`), `c7_shares.csv`,
+  `c7_norm_shares.csv`;
+- `h4_timedrift.csv`, `h4_summary.csv`, `h4_by_day.csv`;
+- figures `reports/figures/c7_share_mcc.png`, `h4_benign_fpr_over_time.png`.
+
+### H3: removing or normalising lab-telling features explains ~0% of the collapse
+
+Setup:
+- RF, XGB and the MLP are retrained without each pair's top-k C4 lab-telling features (benign ranking, k ∈
+  {1, 3, 5, 10}), with the C6 model configs, for 8 ordered pairs × 3 seeds.
+- Share of collapse explained = (cross_k − cross_0) / (within_0 − cross_0) on MCC; analogous on oracle FPR and
+  PR-AUC; reported raw.
+
+Results:
+- **The median share is 0.000 (IQR −0.007 to 0.007) over all 96 (model, pair, k) cells.** Only 3 cells exceed
+  0.2, all the MLP on NF-UNSW → NF-CSE18 (0.28–0.34); 8 are below −0.2. Oracle-FPR and PR-AUC shares tell the
+  same story.
+- **Removal costs nothing within-dataset** (median change in within MCC 0.000). The lab-telling features are not
+  needed to detect attacks in their own lab, and removing them does not make the model transfer.
+- **The Build Guide's frozen-threshold FPR formula is not usable:** its denominator FPR_cross − FPR_within is ≤ 0
+  in 48 of 96 cells, because models fail silently (C6). It is kept in `c7_shares.csv` as `share_fpr_thr`.
+- **Per-domain normalisation is worse than doing nothing.** A rank transform per domain, with the target's fit on
+  its unlabelled pool, takes mean cross MCC from 0.104 to −0.003. It destroys the partial transfer that existed:
+  LycoS18 → LycoS17 MLP falls from 0.572 to 0.102 and XGB from 0.497 to 0.000. Absolute values carry attack
+  information that per-domain ranks erase.
+- **Interpretation (H3 fallback: "0% explained" is a publishable finding).** Together with C4, where the domains
+  stay separable after 10 removals, the lab signature is spread across the whole feature space. Within-family
+  attack flows also differ between labs (C2 bridge check). So the collapse is not caused by a few spurious
+  features that could be dropped.
+
+### H4: gradual drift raises false alarms far less than a sudden switch
+
+Setup:
+- Models are trained on LycoS17's Monday + Tuesday (train-split rows; threshold on Mon–Tue val-split rows).
+- They are evaluated hour by hour on Wednesday–Friday and on LycoS18 (the sudden switch).
+- Rates are pooled over flows. Hours with < 200 benign flows are not plotted: the first hour of a capture day can
+  hold 2–5 flows.
+
+| Autoencoder (benign-only, so its alarms measure "unlike training-period normal") | Benign FPR | Benign KS max vs Mon–Tue |
+|---|---|---|
+| Mon–Tue test | 1.63% | 0.057 |
+| Wednesday / Thursday / Friday | 1.25% / 1.30% / 1.38% (worst hour 3.3%) | 0.100 (later days) |
+| LycoS18, sudden switch | **58.3%** | 0.391 |
+
+- **H4 is supported.** Over three days the features drift measurably (KS 0.057 → 0.100), but the anomaly
+  detector's false alarms stay flat (1.3%). A different network raises them 45× (58.3%) with a feature shift
+  four times larger.
+- The supervised models trained on Mon–Tue are brute-force detectors. They stay silent on every later day and on
+  LycoS18 (benign FPR ≤ 0.04%, DR on the unseen attack families ≈ 0). This is the C6 "silent" failure, so their
+  benign FPR cannot show drift in either direction.
+- Confound (Build Guide): each CIC-2017 day runs a different attack. That is why benign-only measures are the
+  primary H4 evidence and DR over time is reported only with this caveat.
+- Correction to an earlier interim report: a "Wed 1.3% → Thu 5.8% → Fri 11.3%" trend came from averaging hourly
+  rates without weights. It was driven by a 2-flow 08:00 block, and the pooled rates above replace it.

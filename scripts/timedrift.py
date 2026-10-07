@@ -24,6 +24,7 @@ from xnids.models.preprocess import Preprocessor
 from xnids.utils import config, log, paths, seed
 
 INK, INK2, MUTED, GRID, AXIS, SURFACE = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7", "#fcfcfb"
+MIN_BENIGN = 200          # hourly points with fewer benign flows are not plotted (and not used for maxima)
 SLOTS = {"ae": "#2a78d6", "mlp": "#eb6834", "xgb": "#1baf7a", "rf": "#eda100"}
 
 
@@ -93,24 +94,26 @@ def plot(t: pd.DataFrame) -> None:
     import matplotlib.pyplot as plt
 
     order = {"Wed": 0, "Thu": 1, "Fri": 2}
-    later = t[t.period == "later"].copy()
+    later = t[(t.period == "later") & (t.n_benign >= MIN_BENIGN)].copy()
     later["x"] = later.day.map(order) * 10 + (later.hour - 8)
     fig, ax = plt.subplots(figsize=(9, 3.8), facecolor=SURFACE, layout="constrained")
     ax.set_facecolor(SURFACE)
     for m, col in SLOTS.items():
-        g = later[later.model == m].groupby("x").fpr_benign.mean()
-        ax.plot(g.index, 100 * g.values, color=col, lw=2, marker="o", ms=3.5, markeredgecolor=SURFACE,
-                label=f"{m.upper()}: later days, hourly")
+        for k, day in enumerate(order):            # one segment per day: no line across the overnight gaps
+            g = later[(later.model == m) & (later.day == day)].groupby("x").fpr_benign.mean()
+            ax.plot(g.index, 100 * g.values, color=col, lw=2, marker="o", ms=3.5, markeredgecolor=SURFACE,
+                    label=f"{m.upper()}: later days, hourly" if k == 0 else None)
         early = t[(t.model == m) & (t.period == "early_test")].fpr_benign.mean()
         sudden = t[(t.model == m) & (t.period == "sudden")].fpr_benign.mean()
         ax.axhline(100 * sudden, color=col, lw=1.2, ls=(0, (4, 3)), label=f"{m.upper()}: sudden switch (LycoS18)")
         ax.axhline(100 * early, color=col, lw=1, ls=(0, (1, 2)), alpha=0.8)
     for d, i in order.items():
         ax.axvline(i * 10 - 1, color=AXIS, lw=1)
-        ax.text(i * 10 - 0.6, 0.98, d, transform=ax.get_xaxis_transform(), fontsize=8, color=INK2, va="top")
+        ax.text(i * 10 + 4.5, 0.02, d, transform=ax.get_xaxis_transform(), fontsize=8.5, color=INK2, ha="center")
     ax.set_xticks([i * 10 + h for i in order.values() for h in (0, 4, 8)],
                   [f"{8 + h}:00" for _ in order for h in (0, 4, 8)])
     ax.set_yscale("symlog", linthresh=0.1)
+    ax.set_ylim(bottom=0)
     ax.set_ylabel("benign FPR (%) at the\nMon-Tue threshold", fontsize=8, color=INK2)
     ax.grid(axis="y", color=GRID, lw=0.8)
     ax.tick_params(colors=MUTED, labelsize=7.5)
@@ -120,7 +123,7 @@ def plot(t: pd.DataFrame) -> None:
         ax.spines[sp].set_color(AXIS)
     fig.legend(*ax.get_legend_handles_labels(), loc="outside lower center", ncol=3, frameon=False, fontsize=7.5,
                labelcolor=INK2)
-    ax.set_title("H4: gradual drift (LycoS17, later days) vs sudden switch (LycoS18); dotted = Mon-Tue test FPR",
+    ax.set_title("H4: gradual drift (LycoS17, later days) vs sudden switch (LycoS18, dashed); dotted = Mon-Tue test",
                  fontsize=9.5, color=INK, loc="left")
     fig.savefig(paths.FIGURES / "h4_benign_fpr_over_time.png", dpi=160, facecolor=SURFACE)
     plt.close(fig)
@@ -147,18 +150,26 @@ def main() -> None:
                 done.to_csv(out, index=False)
                 logging.info("H4 %s seed %d done", m, s)
     t = done
-    summ = t.groupby(["model", "period"]).agg(fpr_benign=("fpr_benign", "mean"), fpr_benign_max=("fpr_benign", "max"),
-                                             benign_q99=("benign_score_q99", "mean"), ks_max=("ks_max_benign", "mean"),
-                                             dr=("dr", "mean"), threshold=("threshold", "mean")).reset_index()
-    later_day = t[t.period == "later"].groupby(["model", "day"]).agg(fpr_benign=("fpr_benign", "mean"),
-                                                                     dr=("dr", "mean")).reset_index()
+    # pooled rates (false positives / benign flows over all blocks and seeds), never a mean of hourly rates: a
+    # 2-flow hour at 100% would otherwise dominate (CIC-2017 days start with nearly empty 08:00 blocks)
+    t = t.assign(fp=t.fpr_benign * t.n_benign, tp=t.dr * t.n_attack)
+
+    def pooled(g: pd.DataFrame) -> pd.Series:
+        big = g[g.n_benign >= MIN_BENIGN]
+        return pd.Series({"fpr_benign": g.fp.sum() / max(g.n_benign.sum(), 1),
+                          "fpr_benign_max_hour": big.fpr_benign.max() if len(big) else np.nan,
+                          "dr": g.tp.sum() / g.n_attack.sum() if g.n_attack.sum() else np.nan,
+                          "benign_q99": g.benign_score_q99.mean(), "ks_max": g.ks_max_benign.mean(),
+                          "threshold": g.threshold.mean(), "n_benign": g.n_benign.sum() / g.seed.nunique()})
+
+    summ = t.groupby(["model", "period"]).apply(pooled, include_groups=False).reset_index()
+    later_day = t[t.period == "later"].groupby(["model", "day"]).apply(pooled, include_groups=False).reset_index()
     summ.to_csv(paths.TABLES / "h4_summary.csv", index=False)
     later_day.to_csv(paths.TABLES / "h4_by_day.csv", index=False)
     plot(t)
     with pd.option_context("display.width", 200):
-        print(summ.pivot_table(index="model", columns="period",
-                               values=["fpr_benign", "benign_q99", "ks_max", "dr", "threshold"]).round(4).to_string())
-        print(later_day.pivot_table(index="model", columns="day", values=["fpr_benign", "dr"]).round(4))
+        print(summ.round(4).to_string(index=False))
+        print(later_day.pivot_table(index="model", columns="day", values=["fpr_benign", "dr", "n_benign"]).round(4))
 
 
 if __name__ == "__main__":
