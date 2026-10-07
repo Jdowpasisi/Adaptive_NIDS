@@ -332,3 +332,63 @@ Setup:
 - **Fixed during C9:** the scaling input map overflowed to NaN scores on NF-CSE18 → NF-UNSW, where a feature is
   nearly constant on the target. The map is now clipped to the source's range, and C9 was re-run in full (config
   v2).
+
+## C10: adaptation logs
+
+Sources: `data/logs/adapt_log.parquet` (5,600 rows; one MLflow run per pair in experiment `c10`),
+`reports/tables/c10_summary.csv`, `reports/figures/c10_sanity.png`.
+
+Setup:
+- 8 ordered pairs × 50 drift windows, drawn from each target's train split; the test splits are untouched.
+- Window kinds: random, family-mix, source/target blend, and LycoS17 time slices. Window sizes 5k–20k.
+- Each window is halved: an unlabelled adaptation half and a held-out outcome half.
+- Drift features: the C8 monitor on the adaptation half, before any action.
+- 14 actions per window: wait, scaling, AdaBN, Tent, few-shot 50/200/1000, CORAL ×3 and DANN (trained once per
+  pair and seed), XGBoost wait and few-shot 200/1000.
+
+Results:
+- **The best action per window** (by MCC gain) is XGBoost few-shot with 1,000 labels in 90% (cic77) and 94%
+  (nf43) of windows. Label-free adapters are best in at most 10% of windows on cic77 and 3% on nf43.
+- **Mean MCC change** — cic77: AdaBN +0.125, CORAL λ 10 +0.094, MLP few-shot +0.35 to +0.40, XGBoost few-shot
+  +0.47 / +0.54. nf43: every label-free adapter −0.02 to −0.13, MLP few-shot +0.21 to +0.27, XGBoost few-shot
+  +0.45 / +0.57.
+- **`delta_fpr` (the Build Guide's outcome) points the wrong way for the most useful actions.** MLP few-shot has
+  `delta_fpr` −0.07 to −0.17 (FPR rises) while MCC improves by +0.2 to +0.4. The logs therefore keep MCC, DR and
+  PR-AUC alongside FPR.
+- Tent and AdaBN gain less here than in C9 (cic77: Tent ~0 vs +0.21). Each window gives them only 2.5k–10k flows
+  instead of 200k, and blend windows still contain source traffic.
+
+## C11: adapter selector (H6 extension)
+
+Sources: `reports/tables/c11_lopo.csv`, `c11_summary.csv`, `reports/figures/c11_regret.png`, MLflow `c11`;
+deployable selector in `models/selector/`.
+
+Setup:
+- The deployed model is the source MLP.
+- The selector is a 5-model bootstrap LightGBM ensemble. Input: the 10 label-free drift features plus the action.
+  Output: the action's utility.
+- Utility = MCC gain − label_cost × labels; label_cost = 2e-4 per label (1,000 labels cost 0.2 MCC).
+- Evaluation is leave-one-pair-out over the 8 pairs.
+- Baselines: always-Tent, the best single fixed action (chosen on the training pairs), random, and the oracle.
+
+| Method (label cost 2e-4) | Mean regret vs oracle | Top-1 agreement | Mean realised utility |
+|---|---|---|---|
+| oracle | 0 | 1.00 | 0.449 |
+| **best fixed: XGBoost few-shot with 200 labels (chosen in every fold)** | **0.043** | 0.51 | 0.406 |
+| selector | 0.067 | 0.42 | 0.382 |
+| random | 0.400 | 0.07 | 0.049 |
+| always-Tent | 0.466 | 0.04 | −0.017 |
+
+- **The selector does not beat the best fixed action.** Regret is 0.067 vs 0.043; it wins on 4 of 8 held-out
+  pairs, one of them a tie (0.0835 vs 0.0836). This holds at every label cost tested (0, 1e-4, 2e-4, 5e-4) and
+  with the FPR utility. Its predictions rank actions reasonably (Spearman 0.45–0.65 between predicted and actual
+  gain), and both learned and fixed choices are far better than random or always-Tent.
+- **Why:** one action dominates almost everywhere, because labelled retraining is that much stronger than any
+  label-free adapter across these pairs. Window-level drift features add little beyond "use labels". The
+  selector's errors concentrate on the pair least like its training pairs (NF-UNSW → NF-CSE18, regret 0.142 vs
+  0.028).
+- **What it does add:** it waits when nothing is predicted to beat waiting by the margin (wait share 9% at label
+  cost 2e-4, 13% at 5e-4), and it gives an uncertainty for the dashboard. At label cost 0 it matches the fixed
+  rule (regret 0.005 vs 0.004).
+- Honest summary for the paper: with full-information logs, a learned selector is not needed when one adapter
+  dominates. It becomes useful only when the action ranking varies with the drift.
