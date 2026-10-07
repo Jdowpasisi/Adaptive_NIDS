@@ -21,23 +21,29 @@ from xnids.models.zoo import MODELS, BaseModel
 
 class InputMap:
     """Per-feature affine map in signed-log space: z -> (z - mu_from) / sd_from * sd_to + mu_to, back to raw scale.
-    With from = target pool and to = source train it moves target traffic onto the source's scale (moment matching)."""
+    With from = target pool and to = source train it moves target traffic onto the source's scale (moment matching).
 
-    def __init__(self, mu_from, sd_from, mu_to, sd_to) -> None:
+    The mapped value is clipped to [lo, hi], the range the source itself spans (signed-log space): a feature that is
+    nearly constant on the target but varies on the source has a tiny sd_from, and without the clip the map produced
+    values far beyond anything the model saw, overflowing float32 to inf / NaN scores (C9, NF-CSE18 -> NF-UNSW)."""
+
+    def __init__(self, mu_from, sd_from, mu_to, sd_to, lo=None, hi=None) -> None:
         self.mu_from, self.sd_from = np.asarray(mu_from, float), np.asarray(sd_from, float)
         self.mu_to, self.sd_to = np.asarray(mu_to, float), np.asarray(sd_to, float)
+        self.lo = np.asarray(lo, float) if lo is not None else np.full_like(self.mu_to, -np.inf)
+        self.hi = np.asarray(hi, float) if hi is not None else np.full_like(self.mu_to, np.inf)
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         z = np.sign(X) * np.log1p(np.abs(X))
-        z = (z - self.mu_from) / self.sd_from * self.sd_to + self.mu_to
+        z = np.clip((z - self.mu_from) / self.sd_from * self.sd_to + self.mu_to, self.lo, self.hi)
         return (np.sign(z) * np.expm1(np.abs(z))).astype(np.float32)
 
     def to_dict(self) -> dict:
-        return {k: getattr(self, k).tolist() for k in ("mu_from", "sd_from", "mu_to", "sd_to")}
+        return {k: getattr(self, k).tolist() for k in ("mu_from", "sd_from", "mu_to", "sd_to", "lo", "hi")}
 
     @classmethod
     def from_dict(cls, d: dict) -> "InputMap":
-        return cls(d["mu_from"], d["sd_from"], d["mu_to"], d["sd_to"])
+        return cls(d["mu_from"], d["sd_from"], d["mu_to"], d["sd_to"], d.get("lo"), d.get("hi"))
 
 
 @dataclass

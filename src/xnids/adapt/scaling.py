@@ -29,11 +29,12 @@ class DomainRankNorm:
 # ---------------------------------------------------------------- C9 per-domain scaling adapter
 
 
-def _slog_moments(Z: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    z = np.sign(Z) * np.log1p(np.abs(Z))
+def _slog_moments(Z: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """mean, std (0 -> 1), min, max per feature in signed-log space."""
+    z = np.sign(Z) * np.log1p(np.abs(Z.astype(np.float64)))
     mu, sd = z.mean(0), z.std(0)
     sd[sd == 0] = 1.0
-    return mu, sd
+    return mu, sd, z.min(0), z.max(0)
 
 
 class ScalingAdapter(Adapter):
@@ -49,8 +50,8 @@ class ScalingAdapter(Adapter):
         b = self.clone(bundle, "scaling")
         feats = b.preprocess.features_in
         b.preprocess.imputer = MedianImputer().fit(ctx.tgt_pool.select(feats))      # target medians for NaN / inf
-        mu_s, sd_s = _slog_moments(bundle.preprocess.transform(ctx.src_train[0]))
-        mu_t, sd_t = _slog_moments(b.preprocess.transform(ctx.tgt_pool))
-        b.input_map = InputMap(mu_t, sd_t, mu_s, sd_s)
+        mu_s, sd_s, lo_s, hi_s = _slog_moments(bundle.preprocess.transform(ctx.src_train[0]))
+        mu_t, sd_t, _, _ = _slog_moments(b.preprocess.transform(ctx.tgt_pool))
+        b.input_map = InputMap(mu_t, sd_t, mu_s, sd_s, lo_s, hi_s)          # clipped to the source's range
         b.meta["threshold_source"] = "frozen source threshold"
         return b

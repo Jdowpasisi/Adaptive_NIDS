@@ -1,6 +1,7 @@
 # C9: every adapter on cic77 (both directions) and the nf43 pairs, 3 seeds. Before/after on the TARGET test split,
 # plus the adapted model back on the SOURCE test split (forgetting).
 experiment: c9
+version: 2                            # 2: scaling map clipped to the source range (v1 overflowed on NF-CSE18 -> NF-UNSW)
 seeds: [0, 1, 2]
 data: {max_rows_per_split: 2000000, min_per_family: 5000, dev_seed: 0}
 pool_rows: 200000                     # unlabelled target pool sampled from the target TRAIN split

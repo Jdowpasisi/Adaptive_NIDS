@@ -126,7 +126,8 @@ def test_scaling_maps_target_moments_onto_source(setup):
     nb = adapt.get("scaling").adapt(b, ctx)
     zs, zt = b.model_input(ctx.src_train[0]), nb.model_input(ctx.tgt_pool)
     ls, lt = (np.sign(z) * np.log1p(np.abs(z)) for z in (zs, zt))
-    np.testing.assert_allclose(ls.mean(0), lt.mean(0), atol=1e-3)
+    # approximately: the map clips to the source's range, which trims the target's far tail (<= 0.4% here)
+    np.testing.assert_allclose(ls.mean(0), lt.mean(0), atol=0.02)
 
 
 def test_mlp_only_adapters_reject_trees(setup):
@@ -135,3 +136,19 @@ def test_mlp_only_adapters_reject_trees(setup):
                                                    None, None), b.preprocess, 0.5, NAMES, {})
     with pytest.raises(TypeError):
         adapt.get("adabn").adapt(tb, ctx)
+
+
+def test_scaling_map_stays_finite_when_target_feature_is_nearly_constant():
+    from xnids.models.bundle import InputMap
+
+    rng = np.random.default_rng(0)
+    src = np.abs(rng.normal(size=(5000, 2))) * 1e4             # varies over orders of magnitude on the source
+    tgt = np.c_[np.full(5000, 3.0), np.abs(rng.normal(size=5000))]
+    tgt[0, 0] = 3.0000001                                      # near-constant on the target -> tiny sd_from
+    zs, zt = (np.sign(a) * np.log1p(np.abs(a)) for a in (src, tgt))
+    sd_t = zt.std(0)
+    sd_t[sd_t == 0] = 1
+    m = InputMap(zt.mean(0), sd_t, zs.mean(0), zs.std(0), zs.min(0), zs.max(0))
+    out = m.transform(np.c_[np.full(5, 1e6), np.ones(5)].astype(np.float32))
+    assert np.isfinite(out).all() and (out <= src.max(0) * 1.0001).all()
+    assert InputMap.from_dict(m.to_dict()).to_dict() == m.to_dict()

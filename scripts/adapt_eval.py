@@ -46,7 +46,7 @@ def run_pair(cfg: dict, part: str, track: str, src: str, tgt: str, s: int) -> pd
     pc = cfg[part]
     model = pc.get("model", "mlp")
     d = cfg["data"]
-    rcfg = {"experiment": cfg["experiment"], "part": part, "model": model, "pair": [track, src, tgt],
+    rcfg = {"experiment": cfg["experiment"], "version": cfg.get("version", 1), "part": part, "model": model, "pair": [track, src, tgt],
             "adapters": pc["adapters"], "data": d, "pool_rows": cfg["pool_rows"], "src_rows": cfg["src_rows"]}
     h = config.cfg_hash(rcfg)
     runs = log.find_runs(experiment=cfg["experiment"], finished_only=True, cfg_hash=h, seed=str(s))
@@ -166,7 +166,7 @@ def main() -> None:
         idx = [int(i) for i in args.pairs.split(",")] if args.pairs else range(len(pairs))
         for i in idx:
             for s in seeds:
-                h = config.cfg_hash({"experiment": cfg["experiment"], "part": part, "model": cfg[part].get("model", "mlp"),
+                h = config.cfg_hash({"experiment": cfg["experiment"], "version": cfg.get("version", 1), "part": part, "model": cfg[part].get("model", "mlp"),
                                      "pair": pairs[i], "adapters": cfg[part]["adapters"], "data": cfg["data"],
                                      "pool_rows": cfg["pool_rows"], "src_rows": cfg["src_rows"]})
                 runs = log.find_runs(experiment=cfg["experiment"], finished_only=True, cfg_hash=h, seed=str(s))
