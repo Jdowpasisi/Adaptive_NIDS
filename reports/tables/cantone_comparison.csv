@@ -1,5 +1,5 @@
 comparison,ours_mcc,cantone_mcc,note
-within-dataset average (LDA/DT/RF/XGB),0.9115509401457903,0.9463,theirs averages 4 datasets incl. original CIC releases; ours is LycoS17 + LycoS18 only
-cross-dataset average (LDA/DT/RF/XGB),0.08964404074357814,0.2935,theirs averages 12 cross pairs; ours is the 2 LycoS pairs
-LycoS17 -> LycoS18 (average of the 4 models),-0.02765986736135616,0.1083,their worst cross pair
+within-dataset average (LDA/DT/RF/XGB),0.9329775100338078,0.9463,theirs averages 4 datasets incl. original CIC releases; ours is LycoS17 + LycoS18 only
+cross-dataset average (LDA/DT/RF/XGB),0.16923569982696987,0.2935,theirs averages 12 cross pairs; ours is the 2 LycoS pairs
+LycoS17 -> LycoS18 (average of the 4 models),-0.02817791808259617,0.1083,their worst cross pair
 "LDA, LycoS18 -> LycoS17",0.5588596731633153,0.6041,their single best cross result

@@ -1,0 +1,39 @@
+\begin{table}
+\caption{oracle_fpr_at_dr (\%), track nf43: mean $\pm$ std over seeds. Rows: model and training dataset; columns: test dataset.}
+\label{tab:matrix_nf43_oracle_fpr_at_dr}
+\begin{tabular}{lllll}
+\toprule
+ & target & nf_cse_cic18_v2 & nf_ton_v2 & nf_unsw_v2 \\
+model & source &  &  &  \\
+\midrule
+\multirow[t]{3}{*}{ae} & nf_cse_cic18_v2 & 7.43 ± 0.88 & 98.47 ± 0.74 & 99.50 ± 0.17 \\
+ & nf_ton_v2 & 79.44 ± 4.65 & 55.03 ± 3.29 & 98.87 ± 0.14 \\
+ & nf_unsw_v2 & 88.80 ± 2.88 & 94.85 ± 1.28 & 4.33 ± 0.60 \\
+\cline{1-5}
+\multirow[t]{3}{*}{dt} & nf_cse_cic18_v2 & 0.01 ± 0.00 & 100.00 ± 0.00 & 100.00 ± 0.00 \\
+ & nf_ton_v2 & 100.00 ± 0.00 & 1.27 ± 0.01 & 100.00 ± 0.00 \\
+ & nf_unsw_v2 & 100.00 ± 0.00 & 100.00 ± 0.00 & 0.53 ± 0.00 \\
+\cline{1-5}
+\multirow[t]{3}{*}{lda} & nf_cse_cic18_v2 & 18.29 ± 0.00 & 83.59 ± 0.00 & 99.65 ± 0.00 \\
+ & nf_ton_v2 & 87.87 ± 0.00 & 21.19 ± 0.00 & 91.04 ± 0.00 \\
+ & nf_unsw_v2 & 89.08 ± 0.00 & 96.44 ± 0.00 & 1.87 ± 0.00 \\
+\cline{1-5}
+\multirow[t]{3}{*}{mlp} & nf_cse_cic18_v2 & 0.00 ± 0.00 & 80.67 ± 2.65 & 99.96 ± 0.01 \\
+ & nf_ton_v2 & 82.02 ± 18.80 & 2.16 ± 0.02 & 99.74 ± 0.16 \\
+ & nf_unsw_v2 & 91.37 ± 1.54 & 93.26 ± 4.99 & 0.62 ± 0.01 \\
+\cline{1-5}
+\multirow[t]{3}{*}{rf} & nf_cse_cic18_v2 & 0.00 ± 0.00 & 99.45 ± 0.96 & 99.89 ± 0.01 \\
+ & nf_ton_v2 & 47.87 ± 4.68 & 0.37 ± 0.01 & 95.82 ± 2.91 \\
+ & nf_unsw_v2 & 94.18 ± 1.69 & 92.05 ± 4.61 & 0.49 ± 0.01 \\
+\cline{1-5}
+\multirow[t]{3}{*}{tabnet} & nf_cse_cic18_v2 & 0.00 ± 0.00 & 98.78 ± 0.95 & 99.64 ± 0.40 \\
+ & nf_ton_v2 & 68.25 ± 23.29 & 2.67 ± 0.15 & 99.41 ± 0.89 \\
+ & nf_unsw_v2 & 89.73 ± 6.63 & 90.04 ± 7.35 & 46.99 ± 44.21 \\
+\cline{1-5}
+\multirow[t]{3}{*}{xgb} & nf_cse_cic18_v2 & 0.00 ± 0.00 & 89.17 ± 0.00 & 97.47 ± 0.00 \\
+ & nf_ton_v2 & 98.96 ± 0.00 & 0.42 ± 0.00 & 98.07 ± 0.00 \\
+ & nf_unsw_v2 & 89.92 ± 0.00 & 66.68 ± 0.00 & 0.48 ± 0.00 \\
+\cline{1-5}
+\bottomrule
+\end{tabular}
+\end{table}

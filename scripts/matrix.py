@@ -59,7 +59,7 @@ def heatmaps(agg: pd.DataFrame, track: str, models: list[str]) -> None:
     a = agg[agg.track == track]
     ds = list(dict.fromkeys(list(a.source) + list(a.target)))
     order = [d for d in SHORT if d in ds]
-    models = [m for m in models if m in set(a.model)]
+    models = [m for m in MODEL_NAMES if m in set(a.model)]
     if len(order) < 2 or not models:
         return
     for metric, (title, pct, kind) in HEAT.items():
@@ -121,7 +121,7 @@ def within_vs_cross(long: pd.DataFrame, track: str, models: list[str], ref: dict
         return
     per_seed = a.groupby(["model", "kind", "seed"])["mcc_at_thr"].mean().reset_index()
     stats = per_seed.groupby(["model", "kind"])["mcc_at_thr"].agg(["mean", "std"]).reset_index()
-    models = [m for m in models if m in set(stats.model)]
+    models = [m for m in MODEL_NAMES if m in set(stats.model)]      # one fixed model order in every figure
     x = np.arange(len(models))
     fig, ax = plt.subplots(figsize=(max(6.5, 1.1 * len(models) + 2), 3.6), facecolor=SURFACE, layout="constrained")
     ax.set_facecolor(SURFACE)
@@ -131,12 +131,12 @@ def within_vs_cross(long: pd.DataFrame, track: str, models: list[str], ref: dict
         xs = x + (k - 0.5) * (bw + 0.03)
         ax.bar(xs, s["mean"], width=bw, color=col, label=label, zorder=2, edgecolor=SURFACE, linewidth=1)
         ax.errorbar(xs, s["mean"], yerr=s["std"].fillna(0), fmt="none", ecolor=INK2, elinewidth=1, capsize=2, zorder=3)
-        for xi, v in zip(xs, s["mean"], strict=True):
+        for xi, v, sd in zip(xs, s["mean"], s["std"].fillna(0), strict=True):
             lab = f"{0.0 if abs(v) < 0.005 else v:.2f}"
-            if v > 0.2:   # inside tall bars, so labels never meet the reference lines above them
-                ax.text(xi, v - 0.04, lab, ha="center", va="top", fontsize=7, color="#ffffff")
-            else:
-                ax.text(xi, max(v, 0) + 0.02, lab, ha="center", va="bottom", fontsize=7, color=INK2)
+            if v > 0.2:   # at the base of tall bars: clear of error bars and the reference lines above
+                ax.text(xi, 0.025, lab, ha="center", va="bottom", fontsize=7, color="#ffffff")
+            else:         # short bars: above the error bar
+                ax.text(xi, max(v, 0) + sd + 0.02, lab, ha="center", va="bottom", fontsize=7, color=INK2)
     if ref and track == "cic77":
         for val, lab in ((ref["within_avg_mcc"], "Cantone et al. within avg"), (ref["cross_avg_mcc"], "Cantone et al. cross avg")):
             ax.axhline(val, color=MUTED, lw=1, ls=(0, (4, 3)), zorder=1)

@@ -1,0 +1,8 @@
+model,source,cic17_orig
+ae,cic17_orig,0.892 ± 0.009
+dt,cic17_orig,0.999 ± 0.000
+lda,cic17_orig,0.904 ± 0.000
+mlp,cic17_orig,1.000 ± 0.000
+rf,cic17_orig,1.000 ± 0.000
+tabnet,cic17_orig,1.000 ± 0.000
+xgb,cic17_orig,1.000 ± 0.000

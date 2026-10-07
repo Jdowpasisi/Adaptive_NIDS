@@ -1,0 +1,39 @@
+\begin{table}
+\caption{fpr_at_thr (\%), track nf43: mean $\pm$ std over seeds. Rows: model and training dataset; columns: test dataset.}
+\label{tab:matrix_nf43_fpr_at_thr}
+\begin{tabular}{lllll}
+\toprule
+ & target & nf_cse_cic18_v2 & nf_ton_v2 & nf_unsw_v2 \\
+model & source &  &  &  \\
+\midrule
+\multirow[t]{3}{*}{ae} & nf_cse_cic18_v2 & 7.40 ± 0.86 & 91.90 ± 0.81 & 99.87 ± 0.09 \\
+ & nf_ton_v2 & 99.95 ± 0.02 & 55.55 ± 3.19 & 100.00 ± 0.00 \\
+ & nf_unsw_v2 & 100.00 ± 0.00 & 100.00 ± 0.00 & 4.32 ± 0.65 \\
+\cline{1-5}
+\multirow[t]{3}{*}{dt} & nf_cse_cic18_v2 & 0.01 ± 0.00 & 2.40 ± 0.25 & 0.86 ± 0.00 \\
+ & nf_ton_v2 & 13.05 ± 0.32 & 1.16 ± 0.01 & 12.25 ± 1.02 \\
+ & nf_unsw_v2 & 6.64 ± 0.00 & 10.19 ± 1.99 & 0.53 ± 0.00 \\
+\cline{1-5}
+\multirow[t]{3}{*}{lda} & nf_cse_cic18_v2 & 16.76 ± 0.00 & 57.40 ± 0.00 & 24.59 ± 0.00 \\
+ & nf_ton_v2 & 50.87 ± 0.00 & 20.97 ± 0.00 & 65.29 ± 0.00 \\
+ & nf_unsw_v2 & 48.91 ± 0.00 & 16.00 ± 0.00 & 1.80 ± 0.00 \\
+\cline{1-5}
+\multirow[t]{3}{*}{mlp} & nf_cse_cic18_v2 & 0.00 ± 0.00 & 0.03 ± 0.01 & 0.00 ± 0.00 \\
+ & nf_ton_v2 & 2.43 ± 0.76 & 2.20 ± 0.02 & 2.05 ± 0.37 \\
+ & nf_unsw_v2 & 84.72 ± 0.60 & 20.63 ± 5.86 & 0.61 ± 0.02 \\
+\cline{1-5}
+\multirow[t]{3}{*}{rf} & nf_cse_cic18_v2 & 0.00 ± 0.00 & 0.00 ± 0.00 & 0.00 ± 0.00 \\
+ & nf_ton_v2 & 0.10 ± 0.01 & 0.37 ± 0.01 & 0.00 ± 0.00 \\
+ & nf_unsw_v2 & 0.01 ± 0.01 & 0.46 ± 0.62 & 0.47 ± 0.00 \\
+\cline{1-5}
+\multirow[t]{3}{*}{tabnet} & nf_cse_cic18_v2 & 0.00 ± 0.00 & 0.54 ± 0.35 & 0.10 ± 0.11 \\
+ & nf_ton_v2 & 4.59 ± 2.23 & 2.73 ± 0.14 & 10.98 ± 4.62 \\
+ & nf_unsw_v2 & 66.89 ± 26.95 & 63.05 ± 7.42 & 46.88 ± 44.05 \\
+\cline{1-5}
+\multirow[t]{3}{*}{xgb} & nf_cse_cic18_v2 & 0.00 ± 0.00 & 0.00 ± 0.00 & 0.00 ± 0.00 \\
+ & nf_ton_v2 & 0.43 ± 0.00 & 0.43 ± 0.00 & 1.16 ± 0.00 \\
+ & nf_unsw_v2 & 4.66 ± 0.00 & 2.82 ± 0.00 & 0.46 ± 0.00 \\
+\cline{1-5}
+\bottomrule
+\end{tabular}
+\end{table}
