@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 import polars as pl
 
+from xnids.adapt.scaling import DomainRankNorm
 from xnids.data import schema
 from xnids.data.split import dev_subsample
 from xnids.eval import metrics
@@ -99,15 +100,27 @@ def run_one(cfg: dict, seed_: int) -> dict:
     track, source = d["track"], d["source"]
     mr, mpf, dseed = d.get("max_rows_per_split"), d.get("min_per_family", 5000), d.get("dev_seed", 0)
     variant = d.get("split_variant")
+    drop = list(d.get("drop_features") or [])          # C7 ablation: features removed before preprocessing
+    norm = d.get("domain_norm")                         # C7 normalisation variant: "rank" or None
     h = config.cfg_hash(cfg)
+
+    def feats(x: pl.DataFrame) -> pl.DataFrame:
+        return x.drop([c for c in drop if c in x.columns])
     seed.set_seed(seed_)
     with log.start_run(cfg, seed=seed_, experiment=cfg.get("experiment", "train"),
                        run_name=f"{mc['name']}-{track}-{source}",
-                       tags={"model": mc["name"], "track": track, "source": source}) as run:
+                       tags={"model": mc["name"], "track": track, "source": source,
+                             "study": cfg.get("study", "main")}) as run:
         t0 = time.time()
         tr, va = (load_split(source, track, s, mr, mpf, dseed, variant) for s in ("train", "val"))
-        pre = Preprocessor().fit(tr.X)
-        Xtr, Xva = pre.transform(tr.X), pre.transform(va.X)
+        pre = Preprocessor().fit(feats(tr.X))
+        Xtr, Xva = pre.transform(feats(tr.X)), pre.transform(feats(va.X))
+        src_norm = None
+        if norm == "rank":
+            src_norm = DomainRankNorm().fit(Xtr)
+            Xtr, Xva = src_norm.transform(Xtr), src_norm.transform(Xva)
+        elif norm is not None:
+            raise ValueError(f"unknown domain_norm {norm!r}")
         mlflow.log_params({"n_train": len(Xtr), "n_val": len(Xva), "n_features": Xtr.shape[1],
                            "dropped_constant": ",".join(pre.dropped_constant)[:500]})
         model, grid_tab, chosen = select_on_val(mc["name"], mc.get("params", {}), mc.get("grid", []), seed_,
@@ -125,7 +138,12 @@ def run_one(cfg: dict, seed_: int) -> dict:
         rows = []
         for tgt in d["targets"]:
             te = load_split(tgt, track, "test", mr, mpf, dseed, variant)
-            s = model.score(pre.transform(te.X))
+            Xte = pre.transform(feats(te.X))
+            if src_norm is not None:     # each domain through its own CDF, fit on its unlabelled train pool
+                tn = src_norm if tgt == source else DomainRankNorm().fit(
+                    pre.transform(feats(load_split(tgt, track, "train", mr, mpf, dseed, variant).X)))
+                Xte = tn.transform(Xte)
+            s = model.score(Xte)
             ev = metrics.evaluate(te.y, s, thr, dr)
             mlflow.log_metrics({f"{tgt}/{k}": v for k, v in ev.items() if k in METRIC_KEYS})
             rows.append({"cfg_hash": h, "run_id": run.info.run_id, "model": mc["name"], "track": track,
@@ -139,6 +157,8 @@ def run_one(cfg: dict, seed_: int) -> dict:
         table = pd.DataFrame(rows)
         log.log_df_artifact(table, "metrics.parquet")
 
+        if not cfg.get("run", {}).get("save_bundle", True):   # ablation studies: metrics + scores only
+            return {"run_id": run.info.run_id, "version": None, "metrics": table}
         version = f"{mc['name']}-{track}-{source}{'__' + variant if variant else ''}-s{seed_}-{h}"
         sha, _ = log.git_state()
         bundle = Bundle(model, pre, thr, pre.features_in, {

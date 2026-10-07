@@ -92,3 +92,26 @@ def test_resume_skips_finished_runs(toy):
     assert len(log.find_runs(experiment="t")) == 2                 # nothing re-trained
     pd.testing.assert_frame_equal(first.sort_values(["seed", "target"]).reset_index(drop=True),
                                   again.sort_values(["seed", "target"]).reset_index(drop=True))
+
+
+def test_drop_features_norm_and_no_bundle(toy):
+    from xnids.utils import log
+
+    cfg = {**CFG, "run": {"name": "abl", "seeds": [0], "save_bundle": False},
+           "data": {**CFG["data"], "drop_features": ["f1"], "domain_norm": "rank"}}
+    t = harness.run_config(cfg)
+    assert len(t) == 2 and not paths.MODELS.exists()            # no bundle written
+    runs = log.find_runs(experiment="t")
+    assert runs["params.n_features"].iloc[0] == "3"             # f1 dropped before preprocessing
+    # f1 carried the benign shift between a and b; without it and with per-domain ranks, b looks like a
+    cross = t[t.kind == "cross"].iloc[0]
+    assert cross.roc_auc > 0.95
+
+
+def test_domain_rank_norm_is_per_domain():
+    from xnids.adapt.scaling import DomainRankNorm
+
+    rng = np.random.default_rng(0)
+    a, b = rng.normal(size=(5000, 2)), rng.normal(size=(5000, 2)) * 3 + 10   # shifted and rescaled domain
+    za, zb = DomainRankNorm().fit(a).transform(a), DomainRankNorm().fit(b).transform(b)
+    assert abs(za.mean() - zb.mean()) < 0.01 and abs(za.std() - zb.std()) < 0.01

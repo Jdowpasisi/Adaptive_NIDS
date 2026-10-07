@@ -1,0 +1,19 @@
+# C7 decomposition (H3): how much of the cross-dataset collapse do lab-telling features explain?
+study: c7
+experiment: c7
+seeds: [0, 1, 2]
+models: [rf, xgb, mlp]               # Build Guide minimum; model configs are the C6 ones (configs/train/<track>/<model>.yaml)
+ks: [1, 3, 5, 10]                    # remove the top-k lab-telling features of the pair
+ranking_subset: benign               # C4 ranking on benign traffic = lab differences, not attack-mix differences
+pairs:                               # [track, source, target]; k = 0 reference = the C6 matrix cells
+  - [cic77, lycos17, lycos18]
+  - [cic77, lycos18, lycos17]
+  - [nf43, nf_unsw_v2, nf_cse_cic18_v2]
+  - [nf43, nf_unsw_v2, nf_ton_v2]
+  - [nf43, nf_cse_cic18_v2, nf_unsw_v2]
+  - [nf43, nf_cse_cic18_v2, nf_ton_v2]
+  - [nf43, nf_ton_v2, nf_unsw_v2]
+  - [nf43, nf_ton_v2, nf_cse_cic18_v2]
+normalisation:                       # per-domain rank transform instead of removal (no target labels)
+  tracks: [cic77, nf43]
+  models: [rf, xgb, mlp]
