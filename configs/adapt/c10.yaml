@@ -1,0 +1,50 @@
+# C10: full-information adaptation logs (every action on every drift window) -> training data for the C11 selector.
+experiment: c10
+version: 1
+seeds: [0, 1, 2]                      # bundle seeds; window w uses seed w % 3
+data: {max_rows_per_split: 2000000, min_per_family: 5000, dev_seed: 0}
+pairs:                                # [track, source, target]
+  - [cic77, lycos17, lycos18]
+  - [cic77, lycos18, lycos17]
+  - [nf43, nf_unsw_v2, nf_cse_cic18_v2]
+  - [nf43, nf_unsw_v2, nf_ton_v2]
+  - [nf43, nf_cse_cic18_v2, nf_unsw_v2]
+  - [nf43, nf_cse_cic18_v2, nf_ton_v2]
+  - [nf43, nf_ton_v2, nf_unsw_v2]
+  - [nf43, nf_ton_v2, nf_cse_cic18_v2]
+
+windows:
+  per_pair: 50
+  sizes: [5000, 10000, 20000]         # total flows; the first half adapts (unlabelled), the second half is the outcome
+  kinds: {random: 0.3, mix: 0.3, blend: 0.4}   # 'time' replaces a third of random/mix when the target has timestamps
+  blend_share: [0.1, 0.9]             # target share in a blend window (rest = source validation flows)
+  benign_share: [0.5, 0.97]           # mix windows: benign share drawn uniformly, attack families Dirichlet(1)
+  seed: 0
+
+pool_rows: 200000                     # CORAL / DANN target pool (target TRAIN split), trained once per pair x seed
+src_rows: 300000
+xgb_src_rows: 100000                  # source rows for per-window XGBoost few-shot retraining
+
+actions:
+  mlp:
+    - {name: scaling}
+    - {name: adabn}
+    - {name: tent}
+    - {name: fewshot, budget: 50, rule: random}
+    - {name: fewshot, budget: 200, rule: random}
+    - {name: fewshot, budget: 1000, rule: random}
+  mlp_per_pair:                       # trained once per (pair, seed) on the pair's pool, evaluated on every window
+    - {name: coral, lam: 0.1}
+    - {name: coral, lam: 1.0}
+    - {name: coral, lam: 10.0}
+    - {name: dann}
+  xgb:
+    - {name: fewshot, budget: 200, rule: random}
+    - {name: fewshot, budget: 1000, rule: random}
+
+monitor:                              # the C8 monitor settings (configs/drift.yaml), with a lighter MMD for speed
+  reference: {n: 20000, seed: 0}
+  ks: {alpha: 0.05, min_stat: 0.1}
+  mmd: {n_ref: 1000, n_win: 1000, n_perm: 100, alpha: 0.05, pca_dims: 20}
+  adwin: {delta: 0.002}
+  combine: {min_votes: 2}
