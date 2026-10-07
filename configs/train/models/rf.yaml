@@ -1,0 +1,2 @@
+_base: ../_base.yaml
+model: {name: rf, params: {n_estimators: 200, class_weight: balanced_subsample}, grid: [{min_samples_leaf: 1}, {min_samples_leaf: 5}]}

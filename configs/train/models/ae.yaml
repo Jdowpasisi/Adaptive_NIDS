@@ -1,0 +1,2 @@
+_base: ../_base.yaml
+model: {name: ae, params: {hidden: [64, 32, 16], lr: 0.001, batch_size: 4096, max_epochs: 50, patience: 5}}

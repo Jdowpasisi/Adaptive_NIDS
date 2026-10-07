@@ -1,0 +1,4 @@
+_base: ../_base.yaml
+# patience 10 (was 5): with 5, TabNet early-stopped at epoch 6-7 on NF-UNSW for 2 of 3 seeds (source-val PR-AUC 0.21-0.31
+# vs 0.93), i.e. a training failure visible on source validation alone. Applied to every track, all TabNet runs redone.
+model: {name: tabnet, params: {n_d: 16, n_a: 16, n_steps: 3, max_epochs: 30, patience: 10, batch_size: 16384, virtual_batch_size: 512}}

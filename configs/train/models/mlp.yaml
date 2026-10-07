@@ -1,0 +1,3 @@
+_base: ../_base.yaml
+# Architecture and optimiser fixed by the Build Guide; a 1-point grid (the neural models use published defaults).
+model: {name: mlp, params: {hidden: [256, 128, 64], dropout: 0.2, lr: 0.001, batch_size: 4096, max_epochs: 50, patience: 5}}

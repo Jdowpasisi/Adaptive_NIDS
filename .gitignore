@@ -3,7 +3,7 @@ data/*
 !data/MANIFEST.csv
 mlruns/
 mlflow.db
-models/
+/models/
 live.db
 *.pcap
 *.pcapng

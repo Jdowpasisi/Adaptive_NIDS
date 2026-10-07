@@ -1,0 +1,2 @@
+_base: ../_base.yaml
+model: {name: lda, grid: [{solver: svd}, {solver: lsqr, shrinkage: auto}]}

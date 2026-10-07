@@ -1,0 +1,2 @@
+_base: ../_base.yaml
+model: {name: dt, grid: [{max_depth: 10}, {max_depth: 20}, {max_depth: null}]}
