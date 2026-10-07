@@ -41,10 +41,15 @@ class Split:
     family: np.ndarray
 
 
+def split_file(dataset: str, variant: str | None = None):
+    """data/splits/{dataset}.parquet, or {dataset}__{variant}.parquet for a split variant (e.g. the H2 control)."""
+    return paths.SPLITS / (f"{dataset}__{variant}.parquet" if variant else f"{dataset}.parquet")
+
+
 def load_split(dataset: str, track: str, split: str, max_rows: int | None = None, min_per_family: int = 5000,
-               dev_seed: int = 0) -> Split:
+               dev_seed: int = 0, variant: str | None = None) -> Split:
     feats = schema.features(track)
-    rows = pl.scan_parquet(paths.SPLITS / f"{dataset}.parquet").filter(pl.col("split") == split).select("row_id")
+    rows = pl.scan_parquet(split_file(dataset, variant)).filter(pl.col("split") == split).select("row_id")
     if max_rows:
         fam = pl.scan_parquet(tracks.processed_path(dataset, track)).select("row_id", "family")
         rows = dev_subsample(rows.join(fam, on="row_id"), max_rows, min_per_family, dev_seed).select("row_id")
@@ -93,13 +98,14 @@ def run_one(cfg: dict, seed_: int) -> dict:
     dr = cfg["eval"]["target_dr"]
     track, source = d["track"], d["source"]
     mr, mpf, dseed = d.get("max_rows_per_split"), d.get("min_per_family", 5000), d.get("dev_seed", 0)
+    variant = d.get("split_variant")
     h = config.cfg_hash(cfg)
     seed.set_seed(seed_)
     with log.start_run(cfg, seed=seed_, experiment=cfg.get("experiment", "train"),
                        run_name=f"{mc['name']}-{track}-{source}",
                        tags={"model": mc["name"], "track": track, "source": source}) as run:
         t0 = time.time()
-        tr, va = (load_split(source, track, s, mr, mpf, dseed) for s in ("train", "val"))
+        tr, va = (load_split(source, track, s, mr, mpf, dseed, variant) for s in ("train", "val"))
         pre = Preprocessor().fit(tr.X)
         Xtr, Xva = pre.transform(tr.X), pre.transform(va.X)
         mlflow.log_params({"n_train": len(Xtr), "n_val": len(Xva), "n_features": Xtr.shape[1],
@@ -118,7 +124,7 @@ def run_one(cfg: dict, seed_: int) -> dict:
 
         rows = []
         for tgt in d["targets"]:
-            te = load_split(tgt, track, "test", mr, mpf, dseed)
+            te = load_split(tgt, track, "test", mr, mpf, dseed, variant)
             s = model.score(pre.transform(te.X))
             ev = metrics.evaluate(te.y, s, thr, dr)
             mlflow.log_metrics({f"{tgt}/{k}": v for k, v in ev.items() if k in METRIC_KEYS})
@@ -133,12 +139,13 @@ def run_one(cfg: dict, seed_: int) -> dict:
         table = pd.DataFrame(rows)
         log.log_df_artifact(table, "metrics.parquet")
 
-        version = f"{mc['name']}-{track}-{source}-s{seed_}-{h}"
+        version = f"{mc['name']}-{track}-{source}{'__' + variant if variant else ''}-s{seed_}-{h}"
         sha, _ = log.git_state()
         bundle = Bundle(model, pre, thr, pre.features_in, {
             "version": version, "cfg_hash": h, "run_id": run.info.run_id, "parent_version": None,
             "model": mc["name"], "track": track, "target_dr": dr, "git_commit": sha, "seed": seed_,
-            "training_data": {"dataset": source, "split_hash": pl.scan_parquet(paths.SPLITS / f"{source}.parquet")
+            "training_data": {"dataset": source, "split_variant": variant,
+                              "split_hash": pl.scan_parquet(split_file(source, variant))
                               .select(pl.col("split_hash").first()).collect().item(),
                               "n_train": len(Xtr), "n_val": len(Xva), "max_rows_per_split": mr}})
         bundle.save(paths.MODELS / version)

@@ -130,7 +130,8 @@ def build_split(dataset: str, cfg: dict) -> tuple[pl.DataFrame, dict]:
     """Dedup on the dataset's native track, then split the kept rows. Returns (split table, report)."""
     dcfg = cfg["datasets"][dataset]
     track = dcfg["dedup_track"]
-    lf = pl.scan_parquet(tracks.processed_path(dataset, track))
+    base = dcfg.get("base", dataset)          # a split variant re-splits another dataset's rows
+    lf = pl.scan_parquet(tracks.processed_path(base, track))
     status = clean.dedup_status(lf, schema.features(track), keep_hash=True).collect(engine="streaming")
     counts = dict(status.group_by("status").len().iter_rows())
     conflict_vectors = status.filter(pl.col("status") == "conflict")["_h"].n_unique()
@@ -146,7 +147,7 @@ def build_split(dataset: str, cfg: dict) -> tuple[pl.DataFrame, dict]:
         raise ValueError(f"unknown split scheme {dcfg['scheme']}")
     h = split_hash(dataset, cfg)
     out = out.sort("row_id").with_columns(split_hash=pl.lit(h))
-    report = {"dataset": dataset, "dedup_track": track, "scheme": dcfg["scheme"], "split_hash": h,
+    report = {"dataset": dataset, "base": base, "dedup_track": track, "scheme": dcfg["scheme"], "split_hash": h,
               "rows_in": status.height, "duplicates_dropped": counts.get("duplicate", 0),
               "conflict_rows_dropped": counts.get("conflict", 0),
               # one representative per conflicting vector would have survived exact dedup; this is the real cost

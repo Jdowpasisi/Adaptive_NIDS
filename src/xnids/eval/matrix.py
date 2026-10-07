@@ -34,7 +34,9 @@ def collect(plan: dict, tracks: list[str] | None = None) -> tuple[pd.DataFrame, 
                                         "cfg_hash": config.cfg_hash(c)})
                         continue
                     t = harness.logged_metrics(rid)
-                    rows.append(t[t["target"].isin(c["data"]["targets"])])
+                    t = t[t["target"].isin(c["data"]["targets"])].copy()
+                    t["track"] = track      # the plan group: keeps e.g. the H2 control apart from the cic77 cells
+                    rows.append(t)
     long = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
     return long, pd.DataFrame(missing)
 
@@ -102,21 +104,27 @@ def cantone_comparison(agg: pd.DataFrame, ref: dict) -> pd.DataFrame:
 
 
 def h2_table(agg: pd.DataFrame) -> pd.DataFrame:
-    """Within-dataset performance on the original CIC-IDS2017 release vs the corrected LycoS-IDS2017 release."""
-    o = agg[(agg.track == "cic_orig") & (agg.kind == "within")].set_index("model")
-    c = agg[(agg.track == "cic77") & (agg.source == "lycos17") & (agg.kind == "within")].set_index("model")
-    models = [m for m in c.index if m in o.index]
+    """Within-dataset performance: original CIC-IDS2017 (random split) vs corrected LycoS-IDS2017 on a RANDOM split
+    (the H2 control, like for like) and on its time-block split (the main matrix)."""
+    w = agg[agg.kind == "within"]
+    o = w[w.track == "cic_orig"].set_index("model")
+    r_ = w[w.track == "h2_control"].set_index("model")
+    t_ = w[(w.track == "cic77") & (w.source == "lycos17")].set_index("model")
     rows = []
-    for m in models:
+    for m in [m for m in o.index if m in t_.index]:
         r = {"model": m}
         for k in ("mcc_at_thr", "fpr_at_thr", "dr_at_thr", "pr_auc"):
             r[f"original_{k}"] = o.loc[m, f"{k}_mean"]
-            r[f"corrected_{k}"] = c.loc[m, f"{k}_mean"]
-        r["mcc_original_minus_corrected"] = r["original_mcc_at_thr"] - r["corrected_mcc_at_thr"]
+            r[f"corrected_random_{k}"] = r_.loc[m, f"{k}_mean"] if m in r_.index else np.nan
+            r[f"corrected_timeblock_{k}"] = t_.loc[m, f"{k}_mean"]
+        r["mcc_original_minus_corrected_random"] = r["original_mcc_at_thr"] - r["corrected_random_mcc_at_thr"]
+        r["pr_auc_original_minus_corrected_random"] = r["original_pr_auc"] - r["corrected_random_pr_auc"]
         rows.append(r)
     return pd.DataFrame(rows)
 
 
-H2_NOTE = ("Confound: the original release uses CICFlowMeter features and the corrected release uses LycoSTand, and "
-           "the original is split at random while LycoS17 uses time blocks. The difference is therefore "
-           "'original release vs corrected release' (extractor + labels + split scheme), not label errors alone.")
+H2_NOTE = ("H2 compares like with like via the control: original CIC-IDS2017 and LycoS-IDS2017 both on random "
+           "stratified splits (columns original_* vs corrected_random_*). Remaining confound: the original release "
+           "uses CICFlowMeter features and LycoS uses LycoSTand, so the difference is 'original vs corrected release' "
+           "(extractor + labels), not label errors alone. corrected_timeblock_* shows how much the time-block split "
+           "alone changes LycoS17.")

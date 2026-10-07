@@ -5,6 +5,7 @@ sweep:
   cic77:    [lda, dt, rf, xgb, mlp, ae, tabnet]    # Build Guide: all 7 x 3 seeds
   nf43:     [lda, rf, xgb, mlp, dt, ae, tabnet]    # minimum: LDA, RF, XGB, MLP
   cic_orig: [lda, dt, rf, xgb, mlp, ae, tabnet]    # H2: original-release baseline (within only)
+  h2_control: [lda, dt, rf, xgb, mlp, ae, tabnet]  # H2 control: LycoS17 within, random split (configs/train/h2_control)
   core:     [rf, mlp, lda, xgb]                    # minimum: RF, MLP
 
 # Cantone, Marrocco & Bria (2024), IEEE Access 12, MCC averaged over LDA/DT/RF/XGB.

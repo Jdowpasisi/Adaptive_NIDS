@@ -14,6 +14,11 @@ datasets:
   nf_ton_v2:       {scheme: stratified, dedup_track: nf43}
   cic17_orig:      {scheme: stratified, dedup_track: cic_orig}   # timestamps are minute-resolution 12h strings
 
+  # Split VARIANT for the H2 control only (added 7 Oct 2026, before the freeze): the same deduplicated LycoS17 rows,
+  # split at random like cic17_orig, so original-vs-corrected differs in extractor + labels but not in split scheme.
+  # The frozen lycos17 time-block split above is untouched. Used via data.split_variant: random.
+  lycos17__random: {base: lycos17, scheme: stratified, dedup_track: cic77}
+
 # Laptop dev subsample (used by the C5 harness via data.max_rows_per_split); final numbers use full splits.
 dev:
   max_rows_per_split: 2000000

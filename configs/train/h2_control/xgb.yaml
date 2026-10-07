@@ -1,0 +1,4 @@
+_base: ../models/xgb.yaml
+# H2 control: LycoS17 within-dataset on a RANDOM split (split variant lycos17__random), to match cic17_orig.
+run: {name: xgb_h2_control}
+data: {track: cic77, source: lycos17, targets: [], split_variant: random}

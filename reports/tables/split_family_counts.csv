@@ -15,6 +15,14 @@ lycos17,BruteForce,4225,1375,1357
 lycos17,WebAttack,1198,371,464
 lycos17,Bot/Backdoor,440,148,147
 lycos17,Other,7,2,2
+lycos17__random,Benign,756639,251991,252093
+lycos17__random,DoS,105465,35075,35150
+lycos17__random,DDoS,57486,19244,18953
+lycos17__random,Recon,54919,18174,18290
+lycos17__random,BruteForce,4097,1396,1464
+lycos17__random,WebAttack,1206,399,428
+lycos17__random,Bot/Backdoor,450,141,144
+lycos17__random,Other,4,2,5
 lycos18,Benign,4246014,1414655,1413451
 lycos18,DoS,1103020,367119,368738
 lycos18,DDoS,818733,273836,273517
