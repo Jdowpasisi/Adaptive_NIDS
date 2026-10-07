@@ -3,6 +3,7 @@ VENV   ?= $(HOME)/.venvs/driftguard
 PY     := $(VENV)/bin/python
 UV     ?= $(shell command -v uv || echo $(HOME)/.local/bin/uv)
 export PYTHONPATH := $(CURDIR)/src
+export MLFLOW_DISABLE_AGENT_HINT := 1
 
 .PHONY: setup lock test lint fmt mlflow smoke ingest tracks bridge split check-splits advval train matrix api dashboard reproduce
 

@@ -1,0 +1,39 @@
+# C8 drift monitor + H5 evaluation.
+run: {name: drift_eval, seeds: [0, 1, 2]}
+experiment: drift
+
+monitor:
+  reference: {n: 20000, seed: 0}          # fixed sample of SOURCE validation flows
+  window: 5000                            # flows per window
+  ks: {alpha: 0.05, min_stat: 0.1}        # Bonferroni alpha; effect-size floor for the 'ks_effect' detector
+  mmd: {n_ref: 2000, n_win: 2000, n_perm: 200, alpha: 0.05, pca_dims: 20}
+  adwin: {delta: 0.002}
+  combine: {min_votes: 2}                 # combined = at least 2 of {ks_effect, mmd, adwin}
+  cost:                                   # ASSUMPTIONS for the cost trigger (state them with any result)
+    flows_per_hour: 100000
+    cost_per_wrong_decision: 1.0          # analyst units per extra wrong decision
+    horizon_hours: 24
+    adaptation_cost: 2000                 # e.g. 1,000 labels + compute + review
+
+eval:
+  model: mlp                              # the C5 bundle whose confidence feeds ADWIN / ATC
+  data: {max_rows_per_split: 2000000, min_per_family: 5000, dev_seed: 0}
+  pairs:                                  # [track, source, target]
+    - [cic77, lycos17, lycos18]
+    - [cic77, lycos18, lycos17]
+    - [nf43, nf_unsw_v2, nf_cse_cic18_v2]
+    - [nf43, nf_unsw_v2, nf_ton_v2]
+    - [nf43, nf_cse_cic18_v2, nf_unsw_v2]
+    - [nf43, nf_cse_cic18_v2, nf_ton_v2]
+    - [nf43, nf_ton_v2, nf_unsw_v2]
+    - [nf43, nf_ton_v2, nf_cse_cic18_v2]
+  streams:
+    nodrift_windows: 40                   # shuffled SOURCE test windows (capped by the test size)
+    switch_pre: 10                        # source windows, then
+    switch_post: 10                       # target windows (sudden switch)
+    ramp_windows: 20                      # target share rises linearly 0 -> 100%
+
+# H5: scheduled retraining baseline, same cost units as monitor.cost
+retrain:
+  every_flows: [50000, 250000, 1000000]
+  cost_per_retrain: 2000
