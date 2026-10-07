@@ -169,3 +169,50 @@ original CIC-IDS2017 like for like. Within-dataset results:
   0.03–0.08 MCC. The uncontrolled comparison would have mistaken this for a large H2 effect.
 - **Remaining confound:** the two releases use different extractors (CICFlowMeter vs LycoSTand), so this is
   "original vs corrected release", not label errors in isolation.
+
+## C8: drift monitor (H5)
+
+Sources: `reports/tables/drift_h5.csv`, `drift_h5_by_track.csv`, `drift_eval_long.csv` (MLflow run ID per row),
+`drift_vs_retraining.csv`, `drift_explanations.csv`; figure `reports/figures/drift_switch_cic77_lycos17_lycos18.png`
+(Mid-Sem v1).
+
+Setup:
+- 8 ordered pairs (cic77 both directions, all 6 nf43 pairs) × 3 seeds, using each source's C5 MLP.
+- The reference is 20,000 source-validation flows; windows hold 5,000 flows.
+- **null:** held-out source-validation flows, which are exchangeable with the reference.
+- **later:** the source's test split.
+- **switch:** 10 null windows, then 10 target windows.
+- **ramp:** the target share rises from 0 to 100% over 20 windows.
+
+| Detector | False alarms / 100 null windows | Switch detected | Switch delay (flows) | Ramp: target share at first alarm |
+|---|---|---|---|---|
+| KS (Bonferroni) | 0.2 | 100% | 5,000 | 6% |
+| KS + effect size (D ≥ 0.1) | 0.0 | 100% | 5,000 | 18% |
+| MMD (α 0.05) | 2.9 | 100% | 5,000 | 8% |
+| ADWIN on confidence | 0.0 | 100% | 6,042 | 34% (96% of ramps detected) |
+| Combined (≥ 2 of KS-effect, MMD, ADWIN) | 0.0 | 100% | 5,000 | 18% |
+| Combined + ATC cost trigger ("recommend") | 0.0 | 67% | 5,313 | 19% (71% of ramps) |
+
+- **Every detector catches a sudden network switch within the first window (5,000 flows), with no false alarms
+  for KS-effect, ADWIN and the combined rule.** MMD's 2.9% false-alarm rate is in line with its α of 0.05.
+- **Sensitivity on gradual drift ranks KS > MMD > KS-effect = combined > ADWIN.** ADWIN reacts only once the
+  model's confidence moves, at about a third of the traffic.
+- **The same network later in time is real drift.** On LycoS17's test time blocks, KS alarms on 51% of windows and
+  the combined rule on 45%, consistent with the within-dataset DR drop seen in C5/C6 (H4 preview). On the randomly
+  split NF datasets the later stream behaves like the null (0–3%).
+- **The ATC cost trigger misses a third of the switches.** This is exactly the "silent" failure from C6: on, e.g.,
+  NF-ToN → NF-CSE18 the model stays confident while its predicted attack share falls from 0.57 to 0.19, so ATC
+  estimates no error rise. The predicted attack share is the better label-free signal there; feed it to C11.
+- **H5 is supported under the stated cost assumptions** (`configs/drift.yaml`: 100k flows/hour, 1 unit per wrong
+  decision, 2,000 per adaptation). With one network switch per day, the combined monitor acts once, costs 2,000
+  per day and leaves ~5,000 flows unhandled. Retraining every 1M flows costs 4,800 per day with ~500,000 flows
+  unhandled; every 50k flows costs 96,000 per day with ~25,000 unhandled.
+- **The explanations agree with C4.**
+  - On nf43, all 5 of the top-5 drifted features after a switch are among the C4 lab-telling features for that
+    pair, in every pair and seed.
+  - On cic77, 2 of 5 match: the ECN flags lead. Example message: "flag ece is zero in 60% of flows vs 100% in
+    training; flag cwr is zero in 60% of flows vs 100% in training; forward inter-arrival time min is 54.9x higher
+    than in training".
+- **Evaluation bug caught and fixed:** windows were first built in file order. NF-ToN files group flows by class,
+  which made ADWIN, the only order-sensitive detector, fire on 100% of NF-ToN null windows. Windows are now
+  randomly ordered, and ADWIN's null false-alarm rate is 0.
