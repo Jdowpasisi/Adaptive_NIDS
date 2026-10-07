@@ -1,0 +1,43 @@
+# C9: every adapter on cic77 (both directions) and the nf43 pairs, 3 seeds. Before/after on the TARGET test split,
+# plus the adapted model back on the SOURCE test split (forgetting).
+experiment: c9
+seeds: [0, 1, 2]
+data: {max_rows_per_split: 2000000, min_per_family: 5000, dev_seed: 0}
+pool_rows: 200000                     # unlabelled target pool sampled from the target TRAIN split
+src_rows: 300000                      # source rows used by CORAL / DANN / tree few-shot retraining
+
+mlp:                                  # adapters that need the MLP (BatchNorm + gradients) run on the C5 MLP bundle
+  pairs:
+    - [cic77, lycos17, lycos18]
+    - [cic77, lycos18, lycos17]
+    - [nf43, nf_unsw_v2, nf_cse_cic18_v2]
+    - [nf43, nf_unsw_v2, nf_ton_v2]
+    - [nf43, nf_cse_cic18_v2, nf_unsw_v2]
+    - [nf43, nf_cse_cic18_v2, nf_ton_v2]
+    - [nf43, nf_ton_v2, nf_unsw_v2]
+    - [nf43, nf_ton_v2, nf_cse_cic18_v2]
+  adapters:                           # hyperparameters fixed in advance (Build Guide: never chosen on target test)
+    - {name: scaling}
+    - {name: adabn}
+    - {name: tent}
+    - {name: coral, lam: 0.1}
+    - {name: coral, lam: 1.0}
+    - {name: coral, lam: 10.0}
+    - {name: dann}
+    - {name: fewshot, budget: 50, rule: random}
+    - {name: fewshot, budget: 200, rule: random}
+    - {name: fewshot, budget: 1000, rule: random}
+    - {name: fewshot, budget: 200, rule: uncertainty}
+    - {name: fewshot, budget: 200, rule: drift}
+
+trees:                                # model-agnostic adapters on a tree model (retraining is costly: fewer runs)
+  model: xgb
+  pairs:
+    - [cic77, lycos17, lycos18]
+    - [cic77, lycos18, lycos17]
+    - [nf43, nf_ton_v2, nf_cse_cic18_v2]
+  adapters:
+    - {name: scaling}
+    - {name: fewshot, budget: 50, rule: random}
+    - {name: fewshot, budget: 200, rule: random}
+    - {name: fewshot, budget: 1000, rule: random}

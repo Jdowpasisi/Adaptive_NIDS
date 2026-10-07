@@ -5,7 +5,7 @@ import polars as pl
 import pytest
 
 from xnids.drift import explain, ks, trigger
-from xnids.drift.adwin import ConfidenceADWIN, confidence
+from xnids.drift.adwin import ConfidenceADWIN
 from xnids.drift.mmd import MMDTest
 from xnids.drift.monitor import DriftMonitor
 from xnids.models import zoo
