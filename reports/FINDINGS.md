@@ -347,8 +347,14 @@ Setup:
   pair and seed), XGBoost wait and few-shot 200/1000.
 
 Results:
-- **The best action per window** (by MCC gain) is XGBoost few-shot with 1,000 labels in 90% (cic77) and 94%
-  (nf43) of windows. Label-free adapters are best in at most 10% of windows on cic77 and 3% on nf43.
+- **The best action per window**, over all actions and judged by MCC gain against the deployed MLP:
+  - with no label cost, a labelled action wins 98–99% of windows. XGBoost few-shot with 1,000 labels alone wins
+    72% (cic77) and 86% (nf43); label-free adapters win 0% and 0.7%;
+  - at a label cost of 2e-4 MCC per label, XGBoost few-shot with 200 labels wins 56% / 50%, label-free adapters
+    win 8% / 7%, and waiting wins 3% / 8%.
+
+  (An earlier draft said "90–94%". That came from `best_share`, which ranks actions only within one model; the
+  column is now named `best_within_model_share`.)
 - **Mean MCC change** — cic77: AdaBN +0.125, CORAL λ 10 +0.094, MLP few-shot +0.35 to +0.40, XGBoost few-shot
   +0.47 / +0.54. nf43: every label-free adapter −0.02 to −0.13, MLP few-shot +0.21 to +0.27, XGBoost few-shot
   +0.45 / +0.57.

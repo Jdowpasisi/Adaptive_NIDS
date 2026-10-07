@@ -145,7 +145,7 @@ def summarise(log_df: pd.DataFrame) -> pd.DataFrame:
     return log_df.groupby(["track", "model", "adapter"]).agg(
         rows=("delta_fpr", "size"), labels=("labels_used", "mean"), compute_s=("compute_s", "mean"),
         delta_fpr=("delta_fpr", "mean"), delta_mcc=("delta_mcc", "mean"), delta_dr=("delta_dr", "mean"),
-        best_share=("is_best", "mean")).reset_index()
+        best_within_model_share=("is_best", "mean")).reset_index()   # best among THIS model's actions only
 
 
 def plot(summ: pd.DataFrame) -> None:
