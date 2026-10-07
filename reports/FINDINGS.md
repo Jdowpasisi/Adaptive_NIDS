@@ -274,3 +274,57 @@ Setup:
   primary H4 evidence and DR over time is reported only with this caveat.
 - Correction to an earlier interim report: a "Wed 1.3% → Thu 5.8% → Fri 11.3%" trend came from averaging hourly
   rates without weights. It was driven by a 2-flow 08:00 block, and the pooled rates above replace it.
+
+## C9: adapters (before / after, first evidence for H6)
+
+Sources: `reports/tables/c9_long.csv` (324 rows, MLflow experiment `c9`, config v2), `c9_summary.csv`,
+`reports/figures/c9_before_after.png`.
+
+Setup:
+- Each source's C5 bundle is adapted using a 200k-flow unlabelled target pool (target train split) and, for
+  few-shot, labels bought from that pool.
+- Scored on the target test split at the adapted bundle's threshold, and back on the source test split
+  (forgetting).
+- MLP: 12 adapter settings × 8 pairs × 3 seeds. XGBoost: scaling + few-shot × 3 pairs × 3 seeds.
+- Hyperparameters were fixed before any target result (CORAL λ ∈ {0.1, 1, 10}, all reported).
+
+| MLP, mean over pairs and seeds | cic77 MCC (before 0.280) | nf43 MCC (before 0.141) | Labels |
+|---|---|---|---|
+| scaling | 0.293 | 0.060 | 0 |
+| **AdaBN** | **0.535** | 0.031 | 0 |
+| Tent | 0.488 | −0.037 | 0 |
+| CORAL λ 0.1 / 1 / 10 | 0.381 / 0.366 / 0.445 | 0.047 / 0.035 / 0.035 | 0 |
+| DANN | 0.422 | 0.019 | 0 |
+| few-shot random 50 / 200 / 1000 | 0.733 / 0.745 / 0.721 | 0.434 / 0.439 / 0.538 | 50–1000 |
+| few-shot 200, uncertainty / drift selection | 0.325 / 0.274 | 0.317 / 0.146 | 200 |
+
+| XGBoost | cic77 MCC (before 0.248) | nf43 MCC (before 0.509) | FPR change | Source MCC change |
+|---|---|---|---|---|
+| few-shot random 50 / 200 / 1000 | 0.649 / 0.848 / **0.915** | 0.521 / 0.840 / **0.940** | ≤ +0.2 pt | cic77 ≈ 0; nf43 −0.45 to −0.59 |
+| scaling | 0.000 | −0.007 | — | −0.92 |
+
+- **Label-free adaptation works on cic77 and fails on nf43.**
+  - On LycoS17 ↔ LycoS18, AdaBN (no labels, no gradients, < 1 s) roughly doubles MCC (0.28 → 0.54) for +1.2
+    points of FPR. Tent, CORAL and DANN follow.
+  - On the NetFlow pairs every label-free adapter makes the target *worse*, and AdaBN also costs 0.45 MCC on the
+    source. Re-normalising does not fix a shift in what the features mean (different labs, attack families,
+    extractor settings).
+- **Few-shot labels are the reliable lever.**
+  - 50 random labels already lift the MLP to MCC 0.73 on cic77 and 0.43 on nf43.
+  - XGBoost retrained with 1,000 labelled target flows (upweighted to 20% of the training weight) reaches 0.915
+    and 0.940 with no FPR increase.
+  - Caveat: the MLP's threshold is re-picked on a tiny budget (e.g. 62 attacks among 200 flows), which costs
+    11–26 FPR points. XGBoost, with its upweighted retraining, does not pay that.
+- **Selection rule matters, and random wins.** Uncertainty and drift-guided selection (200 labels) are far below
+  random selection: they pick unrepresentative flows, often with almost no attacks.
+- **Per-domain scaling** (moment matching onto the source scale) does nothing for the MLP and destroys XGBoost
+  (MCC → 0). Tree splits on absolute thresholds do not survive re-scaling. This is consistent with C7.
+- **Tent's guard** stopped adaptation early in 14 of 24 runs. A first guard version, measured against the
+  silently failing model's own near-zero attack rate, blocked every useful step. It now follows the Build Guide
+  and uses the source attack rate.
+- **H6 is partly supported.** On the same-extractor pair, label-free test-time methods (AdaBN, Tent) beat
+  CORAL/DANN at zero label cost. Across labs (nf43) no label-free method helps, and a few hundred labels beat
+  everything. C12 (Reptile) completes H6.
+- **Fixed during C9:** the scaling input map overflowed to NaN scores on NF-CSE18 → NF-UNSW, where a feature is
+  nearly constant on the target. The map is now clipped to the source's range, and C9 was re-run in full (config
+  v2).

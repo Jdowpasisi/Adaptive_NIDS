@@ -120,7 +120,12 @@ def plot(summ: pd.DataFrame) -> None:
     tracks = list(dict.fromkeys(m.track))
     fig, axes = plt.subplots(1, len(tracks), figsize=(5.2 * len(tracks), 4.6), squeeze=False, sharey=True,
                              facecolor=SURFACE, layout="constrained")
-    order = list(dict.fromkeys(m.sort_values("adapter").adapter))
+    first = ["scaling", "adabn", "tent", "coral(lam=0.1)", "coral(lam=1.0)", "coral(lam=10.0)", "dann",
+             "fewshot(budget=50,rule=random)", "fewshot(budget=200,rule=random)", "fewshot(budget=1000,rule=random)",
+             "fewshot(budget=200,rule=uncertainty)", "fewshot(budget=200,rule=drift)"]
+    seen = set(m.adapter)
+    order = [a for a in first if a in seen] + sorted(seen - set(first))
+    order = order[::-1]                                  # first entry at the top of the plot
     for ax, t in zip(axes[0], tracks, strict=True):
         g = m[m.track == t].set_index("adapter").reindex(order)
         y = np.arange(len(order))
