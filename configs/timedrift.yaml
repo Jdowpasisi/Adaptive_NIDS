@@ -1,0 +1,17 @@
+# C7 / H4: gradual (temporal) drift inside LycoS17 vs a sudden switch to LycoS18.
+study: c7_timedrift
+experiment: c7
+seeds: [0, 1, 2]
+models: [ae, mlp, xgb, rf]             # model configs from configs/train/cic77/<model>.yaml (C6)
+track: cic77
+source: lycos17
+utc_offset_hours: -3                   # CIC-IDS2017 was captured in ADT (UTC-3)
+early_days: [Mon, Tue]                 # train on these days' train-split rows, threshold on their val-split rows
+later_days: [Wed, Thu, Fri]            # evaluated hour by hour on ALL kept rows (no training rows overlap: other days)
+sudden_target: lycos18                 # its test split = the sudden switch
+# Confound (Build Guide): CIC-IDS2017 runs a different attack each day, so DR over time mixes drift with unseen
+# attack types. Measures used instead, all on BENIGN traffic:
+#   - AE benign FPR (an anomaly detector's false alarms are exactly "looks unlike training-period normal");
+#   - KS max between each hour's benign flows and Mon-Tue benign validation flows (model-independent drift size);
+#   - supervised models: benign FPR and the 99th percentile of benign scores (how close benign traffic creeps to
+#     the threshold). A Mon-Tue supervised model is a brute-force detector and stays silent (FPR ~0) elsewhere.
