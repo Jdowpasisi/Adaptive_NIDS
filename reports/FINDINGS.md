@@ -92,3 +92,80 @@ single-seed sanity numbers. C6 reports mean ± std over 3 seeds.
   of val attacks vs 15.1% of test; DoS 49.3% vs 53.0%), and bursts of the same family can differ too. So even inside
   one dataset, a threshold set on one period does not hold its DR on another. This is a small-scale preview of H4,
   and C7 can separate the two causes.
+
+## C6: results matrix (H1, H2, comparison with Cantone et al.)
+
+Sources: `reports/tables/matrix_{cic77,nf43,core,cic_orig,h2_control}.csv`, where every cell lists its MLflow
+run IDs, plus `matrix_long.csv`, `h1_checks.csv`, `cantone_comparison.csv` and `h2_original_vs_corrected.csv`.
+Figures: `reports/figures/matrix_*`, `within_vs_cross_*`.
+
+Coverage: 7 models × 3 seeds on cic77, nf43, cic_orig and the H2 control, and RF/MLP/LDA/XGB on core. This is
+more than the Build Guide's minimum, with 0 planned runs missing. All runs use the laptop dev subsample of at most
+2M rows per split. TabNet uses patience 10: patience 5 left 2 of 3 NF-UNSW seeds untrained, which was visible on
+source validation (PR-AUC 0.21–0.31 vs 0.93), so the fix uses no target information. All TabNet runs were redone.
+
+### H1 (collapse): supported, with a caveat about how it shows
+
+| Track | Within MCC | Cross MCC | Within DR @ thr | Cross DR @ thr | Within oracle FPR@95%DR | Cross oracle FPR@95%DR |
+|---|---|---|---|---|---|---|
+| cic77 | 0.910 | 0.161 | 0.909 | 0.264 | 0.022 | 0.646 |
+| nf43 | 0.874 | 0.086 | 0.951 | 0.357 | 0.056 | 0.923 |
+| core | 0.864 | 0.120 | 0.928 | 0.271 | 0.099 | 0.699 |
+
+(Means over cells and models.)
+
+- **134 of 136 cross cells have lower MCC and higher oracle FPR than the within cell of the same model and source.**
+  The two exceptions are both LDA on the bridge pair LycoS18 ↔ NF-CSE-CIC18 (core track), i.e. the same traffic
+  extracted by two different tools.
+- **The frozen-threshold FPR rises in only 91 of 136.** Supervised models mostly fail *silently* on a new network:
+  the threshold set on source validation flags almost nothing, so FPR stays low while DR collapses. Random forest
+  is the extreme case: its median cross-dataset DR is 0.01%. The autoencoder fails the other way, flagging 92–100%
+  of benign traffic on every nf43 cross pair. **So H1 should be stated as "detection and ranking collapse", not
+  "FPR rises".** That is why FPR is always reported together with DR.
+- **Transfer is asymmetric.** Training on LycoS18 transfers partly to LycoS17 (MCC 0.41–0.57 for DT, XGB, TabNet,
+  LDA and MLP). Training on LycoS17 transfers to nothing (MCC ≤ 0.014).
+- **Diverse training data transfers best.** On core, RF trained on NF-ToN, the most attack-diverse dataset, reaches
+  MCC 0.851 on LycoS18 (DR 94%, FPR 7%), across extractor families. On nf43, the best cross cell is MLP NF-ToN →
+  NF-CSE18 (MCC 0.756).
+
+### Comparison with Cantone et al. (2024)
+
+| | Ours (LDA/DT/RF/XGB, cic77) | Cantone et al. |
+|---|---|---|
+| Within-dataset average MCC | 0.933 | 0.946 |
+| Cross-dataset average MCC | 0.169 | 0.294 (12 pairs; ours: the 2 LycoS pairs) |
+| LycoS17 → LycoS18 (avg of 4 models) | −0.028 | 0.108 (their worst pair) |
+| LDA LycoS18 → LycoS17 | 0.559 | 0.604 (their best single cross result) |
+
+- **Their key LycoS results reproduce.** LycoS17 → LycoS18 is the worst direction, and LDA LycoS18 → LycoS17 is a
+  strong cross result (0.56 vs 0.60).
+- **"LDA generalises best" does not hold as an average.**
+  - On cic77, the mean cross MCC by model is MLP 0.28, XGB 0.25, LDA 0.22, DT 0.21, TabNet 0.19, RF 0.00, AE −0.02.
+  - On nf43, LDA is near the bottom (0.008); TabNet (0.195) and DT (0.176) lead.
+  - On core, LDA ties with the MLP for best (0.156).
+
+  LDA's best cross cell is strong, but it does not generalise best overall.
+
+### H2 (label inflation): not supported once the split is controlled
+
+The H2 control re-splits LycoS17 at random (`lycos17__random`: the same 1,633,215 rows), so it is compared with the
+original CIC-IDS2017 like for like. Within-dataset results:
+
+| Model | MCC original | MCC corrected, random split | MCC corrected, time blocks | PR-AUC original − corrected (random) |
+|---|---|---|---|---|
+| DT | 0.979 | 0.971 | 0.935 | −0.0007 |
+| RF | 0.970 | 0.967 | 0.914 | −0.0001 |
+| XGB | 0.970 | 0.966 | 0.891 | −0.0001 |
+| MLP | 0.970 | 0.966 | 0.901 | −0.0001 |
+| TabNet | 0.971 | 0.967 | 0.894 | −0.0002 |
+| LDA | 0.719 | 0.936 | 0.876 | −0.079 |
+| AE | 0.787 | 0.864 | 0.834 | −0.038 |
+
+- **On like-for-like splits, the original release is at most 0.003–0.008 MCC higher** for the five strong models.
+  PR-AUC differs by at most 0.0007. For LDA (−0.22 MCC) and the AE (−0.08), the original release is clearly *worse*,
+  plausibly because CICFlowMeter's miscomputed features hurt linear and reconstruction models. There is no evidence
+  of meaningful label-error inflation of within-dataset scores.
+- **The split scheme matters much more than the release.** The time-block split alone costs the corrected release
+  0.03–0.08 MCC. The uncontrolled comparison would have mistaken this for a large H2 effect.
+- **Remaining confound:** the two releases use different extractors (CICFlowMeter vs LycoSTand), so this is
+  "original vs corrected release", not label errors in isolation.

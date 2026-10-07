@@ -137,11 +137,11 @@ def within_vs_cross(long: pd.DataFrame, track: str, models: list[str], ref: dict
                 ax.text(xi, 0.025, lab, ha="center", va="bottom", fontsize=7, color="#ffffff")
             else:         # short bars: above the error bar
                 ax.text(xi, max(v, 0) + sd + 0.02, lab, ha="center", va="bottom", fontsize=7, color=INK2)
-    if ref and track == "cic77":
-        for val, lab in ((ref["within_avg_mcc"], "Cantone et al. within avg"), (ref["cross_avg_mcc"], "Cantone et al. cross avg")):
-            ax.axhline(val, color=MUTED, lw=1, ls=(0, (4, 3)), zorder=1)
-            ax.text(-0.62, val + 0.012, f"{lab} {val:.2f}", ha="left", va="bottom", fontsize=7, color=MUTED, zorder=4,
-                    bbox={"facecolor": SURFACE, "edgecolor": "none", "pad": 1.5})
+    if ref and track == "cic77":   # reference lines named in the legend, so no label sits on a bar
+        ax.axhline(ref["within_avg_mcc"], color=MUTED, lw=1, ls=(0, (4, 3)), zorder=1,
+                   label=f"Cantone et al. within avg {ref['within_avg_mcc']:.2f}")
+        ax.axhline(ref["cross_avg_mcc"], color=MUTED, lw=1, ls=(0, (1, 2)), zorder=1,
+                   label=f"Cantone et al. cross avg {ref['cross_avg_mcc']:.2f}")
     ax.axhline(0, color=AXIS, lw=1)
     ax.set_xticks(x, [MODEL_NAMES.get(m, m) for m in models], fontsize=8.5, color=INK2)
     ax.set_xlim(-0.65, len(models) - 0.35)
@@ -153,9 +153,10 @@ def within_vs_cross(long: pd.DataFrame, track: str, models: list[str], ref: dict
         ax.spines[sp].set_visible(False)
     for sp in ("left", "bottom"):
         ax.spines[sp].set_color(AXIS)
-    ax.legend(frameon=False, fontsize=8, loc="upper right", labelcolor=INK2, ncol=2, bbox_to_anchor=(1, 1.12))
+    fig.legend(*ax.get_legend_handles_labels(), frameon=False, fontsize=7.5, loc="outside lower center",
+               labelcolor=INK2, ncol=4)
     ax.set_title(f"Within vs cross-dataset MCC, track {track} (error bars: std over 3 seeds)", fontsize=9.5,
-                 color=INK, loc="left", pad=18)
+                 color=INK, loc="left")
     fig.savefig(paths.FIGURES / f"within_vs_cross_{track}.png", dpi=160, facecolor=SURFACE)
     plt.close(fig)
 

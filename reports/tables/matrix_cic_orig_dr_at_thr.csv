@@ -4,5 +4,5 @@ dt,cic17_orig,96.64 ± 0.00
 lda,cic17_orig,95.06 ± 0.00
 mlp,cic17_orig,95.13 ± 0.07
 rf,cic17_orig,95.03 ± 0.04
-tabnet,cic17_orig,95.07 ± 0.06
+tabnet,cic17_orig,95.27 ± 0.37
 xgb,cic17_orig,95.09 ± 0.00
