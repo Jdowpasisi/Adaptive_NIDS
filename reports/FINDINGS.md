@@ -313,10 +313,14 @@ Setup:
   - 50 random labels already lift the MLP to MCC 0.73 on cic77 and 0.43 on nf43.
   - XGBoost retrained with 1,000 labelled target flows (upweighted to 20% of the training weight) reaches 0.915
     and 0.940 with no FPR increase.
-  - Caveat: the MLP's threshold is re-picked on a tiny budget (e.g. 62 attacks among 200 flows), which costs
-    11–26 FPR points. XGBoost, with its upweighted retraining, does not pay that.
-- **Selection rule matters, and random wins.** Uncertainty and drift-guided selection (200 labels) are far below
-  random selection: they pick unrepresentative flows, often with almost no attacks.
+  - Caveat: the MLP's threshold is re-picked on a tiny budget (13–58 attacks on average for 50–200 flows), which
+    costs 3–26 FPR points. XGBoost, with its upweighted retraining, does not pay that.
+- **Selection rule matters, and random wins.** With 200 labels both alternatives fall far below random selection,
+  for different reasons:
+  - drift-guided selection buys almost no attacks (0.2 per 200 flows on cic77, 23.5 on nf43), because the most
+    "unlike the source" flows are benign;
+  - uncertainty selection buys plenty of attacks (78–96 per 200) but only flows sitting at the old decision
+    boundary, which do not represent the target.
 - **Per-domain scaling** (moment matching onto the source scale) does nothing for the MLP and destroys XGBoost
   (MCC → 0). Tree splits on absolute thresholds do not survive re-scaling. This is consistent with C7.
 - **Tent's guard** stopped adaptation early in 14 of 24 runs. A first guard version, measured against the
