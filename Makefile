@@ -48,7 +48,7 @@ CONFIG ?= configs/train/cic77/lda.yaml
 train:            ## C5: make train CONFIG=configs/train/<track>/<model>.yaml [ARGS='--source lycos17 --seeds 0']
 	$(PY) scripts/train.py --config $(CONFIG) $(ARGS)
 backup:           ## copy mlflow.db (consistent snapshot), mlruns, models, splits to ~/driftguard_backup
-	scripts/backup.sh
+	bash scripts/backup.sh
 TRACK ?= cic77
 matrix:
 	$(PY) scripts/matrix.py --track $(TRACK)
