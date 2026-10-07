@@ -147,8 +147,13 @@ def main() -> None:
     keys = ["track", "model", "source", "target", "kind", "k"]
     g = long.groupby(keys)
     agg = g[matrix.HEADLINE].mean().add_suffix("_mean").join(g["seed"].nunique().rename("n_seeds")).reset_index()
-    abl = shares(agg[agg.k >= 0], ref).merge(agg[["track", "source"]].drop_duplicates(), on="source")
-    nrm = shares(agg[agg.k == -1].assign(k="rank"), ref).merge(agg[["track", "source"]].drop_duplicates(), on="source")
+    tracks_of = agg[["track", "source"]].drop_duplicates()
+
+    def with_track(df: pd.DataFrame) -> pd.DataFrame:      # shares() returns an empty frame when a part has no runs
+        return df.merge(tracks_of, on="source") if len(df) else df
+
+    abl = with_track(shares(agg[agg.k.apply(lambda v: isinstance(v, int | float) and v >= 0)], ref))
+    nrm = with_track(shares(agg[agg.k == -1].assign(k="rank"), ref))
     abl.to_csv(paths.TABLES / "c7_shares.csv", index=False)
     nrm.to_csv(paths.TABLES / "c7_norm_shares.csv", index=False)
     if len(abl):
