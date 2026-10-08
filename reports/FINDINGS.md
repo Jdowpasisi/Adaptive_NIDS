@@ -440,3 +440,21 @@ Setup:
   - Meta-learned fast adaptation adds nothing over fine-tuning with the same labels.
   - The cheapest reliable recovery is a few hundred labelled target flows: an XGBoost retrained with them reaches
     MCC 0.92–0.94 (C9).
+
+### C10 v2 / C11 re-run with Reptile actions (9 Oct 2026; supersedes the C10/C11 numbers above)
+
+- **C10 v2:** 6,500 rows. The nf43 windows gain 3 Reptile actions: switch to the meta-model trained WITHOUT that
+  target, AdaBN, then 8 steps on 50 / 200 / 1000 bought labels. Mean MCC change on nf43: Reptile +0.18 / +0.22 /
+  +0.20, against XGBoost few-shot +0.45 / +0.57 and MLP few-shot +0.21 to +0.27. At label cost 2e-4, Reptile-200
+  and Reptile-50 are the best action in 7.7% and 6.0% of nf43 windows; XGBoost few-shot 200 is best in 45%.
+- **C11:** the conclusion is unchanged. Mean leave-one-pair-out regret:
+
+| Label cost | 0 | 1e-4 | 2e-4 | 5e-4 |
+|---|---|---|---|---|
+| best fixed (XGBoost few-shot 200) | 0.004 | 0.037 | **0.050** | 0.061 |
+| selector | 0.006 | 0.065 | **0.077** | 0.082 |
+| random | 0.469 | 0.422 | 0.411 | 0.424 |
+| always-Tent | 0.572 | 0.505 | 0.472 | 0.424 |
+
+  The selector beats the fixed action on 3 of 8 held-out pairs (LycoS18 → LycoS17, NF-CSE18 → NF-UNSW, NF-ToN →
+  NF-UNSW).
