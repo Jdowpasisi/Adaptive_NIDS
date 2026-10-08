@@ -1,0 +1,7 @@
+target_rate,flows,achieved_flows_per_s,p50_ms,p99_ms,requests,kept_up,p99_ok
+1000,20000,1000,16.5,31.2,99,true,true
+2000,40000,2000,23.6,40.5,99,true,true
+5000,100000,5000,49.3,74.2,100,true,true
+10000,200000,10000,49.6,72.7,200,true,true
+20000,272768,17233,44.2,62.8,273,false,true
+0,150000,16880,44.8,72.4,150,true,true

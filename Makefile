@@ -67,6 +67,14 @@ api:              ## C14: detector API on :8000 (config: configs/live.yaml or $$
 	$(VENV)/bin/uvicorn xnids.live.api:app --host 0.0.0.0 --port 8000
 bench-api:        ## C14: p50/p99 latency for batches of 1 / 100 / 1000 -> reports/tables/c14_latency.csv
 	$(PY) scripts/bench_api.py
+calibrate-monitor: ## C15: calibrate the live drift monitor on time-ordered raw source traffic
+	$(PY) scripts/calibrate_monitor.py
+replay:           ## C15: demo.pcap -> NFStream -> fresh API (+ monitor); ARGS='--rate 2000 --auto-adapt --auto-approve'
+	$(PY) scripts/replay.py --mode file $(ARGS)
+load-test:        ## C15: sustained flows/s with p99 < 100 ms -> reports/tables/c15_load.csv
+	$(PY) scripts/load_test.py
+replay-live:      ## C15: live mode (sudo): veth pair + tcpreplay + NFStream on veth1, slice at x1
+	sudo bash scripts/replay_live.sh
 walkthrough:      ## C14: demo replay through the API (monitor -> recommend -> adapt -> gates -> promote -> rollback)
 	$(PY) scripts/c14_walkthrough.py --approve --adapt-from-window 37
 dashboard:

@@ -568,3 +568,66 @@ Setup:
   - C10 v2 rows that used the old fallback, estimated from each window's attack share: about 6 of 800 XGBoost
     few-shot rows and about 58 of 400 MLP few-shot-50 rows. The C11 conclusion (best fixed action = XGBoost
     few-shot 200) does not rest on them, and C10 / C11 have not been re-run.
+
+## C15: replay runner and the calibrated live monitor
+
+- **The monitor was re-calibrated for time-ordered real traffic** (`scripts/calibrate_monitor.py`,
+  `xnids.drift.novelty`, `DriftMonitor` mode `calibrated`; C8's default mode is unchanged).
+  - **Reference:** 20,000 **raw**, non-deduplicated 2017 flows. **Null:** the other 1.34M raw flows in time order
+    (268 windows of 5,000), source attack bursts included. The demo's segment A (the split holdout) is in neither.
+  - **No KS / MMD threshold separates the networks.** Source attack bursts reach `ks_max` 0.90 and `mmd_stat`
+    0.64, so at the null's 99th percentile 0% of segment-B2 windows exceed any of them. A change of **mix** and a
+    change of **network** look alike to distribution-shape tests.
+  - **New statistic: the novelty share.** It is the share of a window's flows whose nearest reference flow, in the
+    MLP's standardised penultimate-layer embedding, is farther away than 99% of held-out source flows are. The
+    window threshold is the null's 99th percentile, 3.2%.
+    - Windows over the threshold: segment A 2.9%, B1 100%, B2 80%.
+    - In raw input space, B2 reached only 20%: the evasive Hulk flows look ordinary in raw features.
+  - **Alert = 2 consecutive windows over the threshold.** The ATC cost trigger is dropped in this mode because it
+    estimated a larger error rise for segment A (0.04–0.10) than for B1 (0.03–0.07).
+  - **Result on the demo stream:** **0 of 35 segment-A windows alert**, and the first alert fires at the 2nd
+    segment-B window (10,000 flows after the switch).
+  - **H5 caveat:** C8's 0 false alarms hold for shuffled windows only. The C8 detector flagged 34 of 35
+    in-distribution windows of real time-ordered traffic.
+- **Runner** (`xnids.live.replay`, `scripts/replay.py`):
+  - File mode runs NFStream on the PCAP, live mode runs NFStream on an interface, and parquet mode reads
+    pre-extracted flows (for the load test).
+  - Every 200 ms it sends what is available, at most 1,000 flows per request, to `/score/columns`.
+  - The monitor processes each 5,000-flow window in its own thread and posts the report to `/drift/report`.
+  - Optional rehearsal policy: auto-adapt on the first alert, auto-approve when the gates pass.
+  - **Bug found and fixed: NFStream with 4 meters emits flows out of order.** Each meter processes its share of
+    the packets at its own pace, so segment-B flows filled 16–50% of the windows that should hold segment A.
+    The median emission lag was 4,066 s of capture time. The runner now uses one meter: windows are 94–100% one
+    segment and the median lag is 0.1 s. The meter count does not change a flow's content, so the frozen
+    extractor hash still applies.
+  - **Emission lag** (time between a flow's last packet and its report, in capture time): median 0.1 s, p95 482
+    s. Flows that end with a FIN/RST are reported at once; others wait out the 120 s idle timeout, and long flows
+    wait longer.
+- **Whole demo.pcap, file mode, unattended rehearsal** (`data/live/runs/file-rehearsal`, `c15_rehearsal.png`):
+  - 272,768 flows in 58 s, about 4,700 flows/s end to end; `/score` p99 60 ms.
+  - Segment A: 0 alerts, benign FPR 0.1–3%.
+  - Alert at window 36. The selector recommends XGBoost few-shot 200, the gates pass and the candidate is promoted.
+  - Segment B1 benign FPR: 10.9% and 8.3% before, **0.06% and 0.2%** afterwards (windows 38–39). Window 37 was
+    still scored by the old model, because the monitor thread runs one window behind scoring.
+  - **Cost of adapting on benign-only new-network flows:** the promoted model no longer flags B1's port-21 refused
+    connections (DR 0%; the original MLP flagged 100%), and B2 Hulk stays missed.
+- **Load test** (`scripts/load_test.py`, `c15_load.csv`, `c15_load.png`): pre-extracted flows, monitor on, one API
+  worker, scores stored.
+
+| Target rate (flows/s) | Achieved | p50 / p99 (ms) |
+|---|---|---|
+| 1,000 | 1,000 | 16.5 / 31.2 |
+| 2,000 | 2,000 | 23.6 / 40.5 |
+| 5,000 | 5,000 | 49.3 / 74.2 |
+| 10,000 | 10,000 | 49.6 / 72.7 |
+| top speed | 16,880 | 44.8 / 72.4 |
+
+  **The sustained rate with p99 < 100 ms is about 17k flows/s.** End to end, NFStream on one meter is the
+  bottleneck, at about 4,700 flows/s.
+- **Live mode** (`scripts/replay_live.sh`) needs root: a veth pair, tcpreplay and NFStream on `veth1`.
+  - Timing features only match file mode at multiplier 1, because `--multiplier` compresses packet gaps. The
+    file-vs-live parity check (`scripts/replay_parity.py`) therefore uses a 10-minute slice at x1, A → B1:
+    73,494 flows in file mode.
+  - Live flows carry wall-clock start times, so the evaluation overlay falls back to the 5-tuple where it carries
+    one label (96.5% of demo flows).
+  - **Live mode has not been run yet:** it needs the user's sudo.

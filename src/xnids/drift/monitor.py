@@ -27,6 +27,11 @@ DEFAULTS = {
     "adwin": {"delta": 0.002},
     "combine": {"min_votes": 2},
     "cost": {},
+    # C15: "calibrated" = alert on the novelty share over a threshold calibrated on time-ordered source traffic,
+    # held for `persist` windows (live traffic). "c8" = the C8 rule (2 of {KS effect, MMD, ADWIN} + cost trigger).
+    "mode": "c8",
+    "persist": 2,
+    "novelty": {"flow_quantile": 0.99},
 }
 
 
@@ -47,6 +52,8 @@ class DriftReport:
     detectors: dict[str, bool] = field(default_factory=dict)   # ks, ks_effect, mmd, adwin, combined
     extra_wrong_per_hour: float = 0.0
     explanations: list[str] = field(default_factory=list)
+    novelty_share: float | None = None     # C15 calibrated mode: share of flows unlike any reference flow
+    streak: int = 0                        # C15 calibrated mode: consecutive windows over the threshold
 
     def features(self) -> dict[str, float]:
         """The label-free drift features the C11 selector consumes."""
@@ -60,6 +67,15 @@ class DriftReport:
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), default=float)
+
+
+def window_stats(rep: "DriftReport") -> dict[str, float]:
+    """Scalar statistics of one report, the candidates for calibrated thresholds (C15)."""
+    d = np.sort(np.array([v[0] for v in rep.ks.values()]))[::-1]
+    return {"ks_max": float(d[0]), "ks_top5": float(d[:5].mean()), "ks_mean": float(d.mean()),
+            "mmd_stat": float(rep.mmd[0]), "mean_conf": rep.mean_conf, "entropy": rep.entropy,
+            "est_fpr_rise": rep.est_fpr_rise, "attack_share_pred": rep.attack_share_pred,
+            "adwin": float(rep.adwin_change), "novelty_share": float("nan") if rep.novelty_share is None else rep.novelty_share}
 
 
 def _deep(base: dict, over: dict) -> dict:
@@ -88,6 +104,15 @@ class DriftMonitor:
         self.adwin = ConfidenceADWIN(self.cfg["adwin"]["delta"])
         self.cost = trigger.CostConfig(**self.cfg["cost"])
         self.window_id = 0
+        self.streak = 0
+        self.thresholds: dict[str, float] = dict(self.cfg.get("thresholds", {}))
+        self.novelty = None
+        if self.cfg["mode"] == "calibrated":
+            from xnids.drift.novelty import Novelty
+
+            self.novelty = Novelty(bundle).fit(self.ref)
+            if "novelty_tau" in self.cfg:
+                self.novelty.tau = float(self.cfg["novelty_tau"])
 
     def process(self, X: pl.DataFrame) -> DriftReport:
         W = self.bundle.preprocess.transform(X)
@@ -106,6 +131,17 @@ class DriftMonitor:
         det["combined"] = sum((det["ks_effect"], det["mmd"], det["adwin"])) >= self.cfg["combine"]["min_votes"]
         rise = self.atc.error_rise(conf)
         worth, extra = trigger.worth_acting(rise, self.cost)
+        nov = None
+        if self.novelty is not None and self.novelty.tau is not None:
+            nov = self.novelty.share(W)
+            if "novelty_share" in self.thresholds:
+                det["novelty"] = nov > self.thresholds["novelty_share"]
+                det["combined"] = det["novelty"]
+        if self.cfg["mode"] == "calibrated":
+            # the ATC cost trigger is not used: on the demo it estimated a larger error rise for the held-out
+            # in-distribution segment (0.04-0.10) than for the new network (0.03-0.07)
+            self.streak = self.streak + 1 if det["combined"] else 0
+            worth = self.streak >= self.cfg["persist"]
         top = ks.ranked(k)[:5]
         sentences = [explain.describe(self.ref[:, self.names.index(f)], W[:, self.names.index(f)], f, k[f][0])
                      for f in top]
@@ -114,7 +150,8 @@ class DriftMonitor:
             mean_conf=float(conf.mean()), entropy=float(entropy(s).mean()), est_fpr_rise=rise,
             attack_share_pred=float(np.mean(s >= self.bundle.threshold)), top_features=top,
             message=explain.message(sentences, det["combined"]), recommend=bool(det["combined"] and worth),
-            detectors=det, extra_wrong_per_hour=extra, explanations=sentences)
+            detectors=det, extra_wrong_per_hour=extra, explanations=sentences, novelty_share=nov,
+            streak=self.streak)
         self.window_id += 1
         return rep
 

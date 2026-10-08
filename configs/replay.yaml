@@ -1,0 +1,20 @@
+# C15 replay runner + the calibrated live drift monitor.
+model: {name: mlp, track: nfs, source: nfs17, seed: 0}       # the model the monitor is calibrated for (C13 demo)
+api: http://127.0.0.1:8000
+pcap: data/replay/demo.pcap
+micro_batch_ms: 200            # send what NFStream emitted every 200 ms (Build Guide C15)
+max_batch: 1000
+monitor:
+  window: 5000
+  reference: {n: 20000, seed: 0}                 # RAW source flows (scripts/calibrate_monitor.py)
+  ks: {alpha: 0.05, min_stat: 0.1}
+  mmd: {n_ref: 2000, n_win: 2000, n_perm: 200, alpha: 0.05, pca_dims: 20}
+  adwin: {delta: 0.002}
+  combine: {min_votes: 2}
+  cost: {flows_per_hour: 100000, cost_per_wrong_decision: 1.0, horizon_hours: 24, adaptation_cost: 2000}
+  mode: calibrated               # alert = novelty share over its calibrated threshold for `persist` windows
+  persist: 2
+  novelty: {flow_quantile: 0.99, holdout: 20000}
+  calibration:                   # scripts/calibrate_monitor.py -> models/monitor/<track>-<source>.json
+    stats: [novelty_share, ks_max, ks_top5, ks_mean, mmd_stat, mean_conf, est_fpr_rise]
+    quantile: 0.99               # window thresholds = the 0.99 quantile over time-ordered source windows
