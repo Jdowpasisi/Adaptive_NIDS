@@ -111,7 +111,11 @@ def run_target(cfg: dict, track: str, target: str, s: int, iters: int | None) ->
         idx = dom.window(r, tc["window"], tuple(tc["benign_share"]))
         X = dom.X[idx]
         if r.random() < tc["synthetic_prob"]:
-            X = X * r.uniform(*tc["scale_range"], size=X.shape[1]).astype(np.float32)
+            # float64 and clipped: NF-v2 rate fields hold values near the float32 maximum (rates over the broken
+            # zero durations), and x2 overflowed to inf -> NaN weights (first full C12 run, NF-CSE18 held out)
+            lim = np.finfo(np.float32).max
+            X = np.clip(X.astype(np.float64) * r.uniform(*tc["scale_range"], size=X.shape[1]), -lim, lim).astype(
+                np.float32)
         n = int(r.choice(tc["support_sizes"]))
         T = to_net(model, X)
         return Task(T, T[:n], torch.as_tensor(dom.y[idx][:n], dtype=torch.float32, device=model.device))
