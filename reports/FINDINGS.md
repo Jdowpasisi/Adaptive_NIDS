@@ -631,3 +631,43 @@ Setup:
   - Live flows carry wall-clock start times, so the evaluation overlay falls back to the 5-tuple where it carries
     one label (96.5% of demo flows).
   - **Live mode has not been run yet:** it needs the user's sudo.
+
+## C16: dashboard and the 5-minute demo
+
+- **Dashboard** (`dashboard/app.py`, Streamlit; `make demo` = a fresh API plus the dashboard, bound to localhost).
+  Four pages that refresh every 2 s:
+  - **Live:** flows/s, alerts/min, p99 latency, and benign FPR / DR per 5,000 flows for the *original* vs the
+    *adapted* model. This is the evaluation overlay from the replay labels.
+  - **Drift:** novelty per window against the calibrated threshold, top shifted features (KS), MMD p-value and
+    ADWIN marks, and the plain-language explanation.
+  - **Adapt:** the selector's recommendation with predicted gain ± std, Build candidate, the gate table, Approve /
+    Reject (name and reason required), Rollback, and Reject & rebuild.
+  - **Audit.**
+- **Supporting changes:**
+  - The API now keeps scoring the first deployed model as an **"original" shadow** after a promotion, so original
+    vs adapted can be compared on the same traffic.
+  - The runner takes a **rate schedule**: 2,000 flows/s through segment A, so the switch falls at about 1:30, then
+    300 flows/s in segment B.
+  - The runner writes a status file (rate, flow-expiry lag) for the sidebar.
+- **Rehearsals** (`scripts/rehearse_demo.py`: the real app.py under Streamlit AppTest, a fresh API per run, the
+  presenter's clicks scripted; `c16_rehearsals.csv`). **3 of 3 ran start to finish.** Times are from Start:
+
+| Run | Switch to B | Drift alert | Candidate | Approved | FPR 40 s later: original vs adapted | Rebuilds |
+|---|---|---|---|---|---|---|
+| 1 | 91.8 s | 125.7 s | 127.0 s | 127.9 s | 7.4% vs 0.4% | 1 (gate blocked canary FPR) |
+| 2 | 91.4 s | 125.3 s | 127.0 s | 127.2 s | 7.4% vs 0.8% | 0 |
+| 3 | 93.2 s | 124.9 s | 126.3 s | 126.6 s | 7.4% vs 0.7% | 0 |
+
+  In every run, segment A raised no alert. Rollback restored the original and the audit trail was in order.
+- **Found by rehearsing: the recommended action is occasionally unstable.**
+  - In an earlier 3× rehearsal, run 3's XGBoost few-shot-200 candidate failed the canary-FPR gate (10.9% vs a limit
+    of 4.4%).
+  - Training is deterministic, including with concurrent GPU scoring. The cause is the pool: the 10,000 most recent
+    flows when the analyst clicks.
+  - Over 41 click timings, budget 200 at target weight 0.2 (the C9 default) fails the gates 1 time in 41. Target
+    weight 0.1, or budget 1,000, fails 0 of 41.
+  - The adapter was **not** re-tuned on the demo stream, since that would be tuning on test traffic and would change
+    the C9–C11 results. The gate blocks the bad candidate, and the dashboard offers **Reject & rebuild with a new
+    label sample** (next seed, audited). The rehearsal takes that branch when the gates fail.
+- **Not verified here:** the visual layout in a real browser (headless Firefox captures before Streamlit renders).
+  No backup screen recording yet; both are for the presenter (`docs/DEMO.md`).

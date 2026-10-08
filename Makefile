@@ -77,7 +77,11 @@ replay-live:      ## C15: live mode (sudo): veth pair + tcpreplay + NFStream on 
 	sudo bash scripts/replay_live.sh
 walkthrough:      ## C14: demo replay through the API (monitor -> recommend -> adapt -> gates -> promote -> rollback)
 	$(PY) scripts/c14_walkthrough.py --approve --adapt-from-window 37
-dashboard:
-	$(VENV)/bin/streamlit run dashboard/app.py
+dashboard:        ## C16: dashboard only, against $$DG_API (default http://127.0.0.1:8000)
+	PYTHONPATH=src $(VENV)/bin/streamlit run dashboard/app.py
+demo:             ## C16: fresh API + dashboard (http://localhost:8501); press "Start replay" in the sidebar
+	$(PY) scripts/run_demo.py
+rehearse:         ## C16: run the 5-minute demo script 3x through the real dashboard (AppTest) -> c16_rehearsals.csv
+	$(PY) scripts/rehearse_demo.py
 reproduce: ingest bridge tracks split
 	@echo "Remaining reproduce steps are added as components land (see Build_Guide.md)."

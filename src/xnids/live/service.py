@@ -26,7 +26,7 @@ from xnids.live.registry import Registry, RegistryError, gate_checks
 from xnids.live.store import Store
 from xnids.utils import paths
 
-ROLES = ("active", "candidate")
+ROLES = ("active", "candidate", "original")      # original = shadow of the first deployed model (C16)
 
 
 class ServiceError(RuntimeError):
@@ -137,6 +137,9 @@ class DetectorService:
                 b = self.registry.get(role)
                 if b is None:
                     continue
+                if role == "original" and (not self.cfg.get("shadow_original", True)
+                                           or self.registry.version("original") == self.registry.version("active")):
+                    continue                                    # nothing to compare: original IS the active model
                 s = b.score(X)
                 a = s >= b.threshold
                 v = self.registry.version(role)
@@ -154,7 +157,8 @@ class DetectorService:
             self.buffer_rows += X.height
             while self.buffer_rows - self.buffer[0][1].height >= self.cfg["buffer_rows"]:
                 self.buffer_rows -= self.buffer.popleft()[1].height
-            self.events.append((now, X.height, alerts.get("active", 0), alerts.get("candidate", 0)))
+            self.events.append((now, X.height, alerts.get("active", 0), alerts.get("candidate", 0),
+                                alerts.get("original", 0)))
         return {"batch_id": batch, "n": X.height, **out}
 
     def recent(self) -> tuple[list[str], pl.DataFrame]:
@@ -283,7 +287,8 @@ class DetectorService:
         span = max(now - ev[0][0], 1.0) if ev else w
         return {"window_s": w, "flows": sum(e[1] for e in ev), "flows_per_s": sum(e[1] for e in ev) / span,
                 "alerts_per_min": {"active": sum(e[2] for e in ev) / span * 60,
-                                   "candidate": sum(e[3] for e in ev) / span * 60},
+                                   "candidate": sum(e[3] for e in ev) / span * 60,
+                                   "original": sum(e[4] for e in ev) / span * 60},
                 "latency_ms": {"p50": float(np.percentile(lat, 50) * 1e3) if lat else None,
                                "p99": float(np.percentile(lat, 99) * 1e3) if lat else None, "requests": len(lat)},
                 "buffer_rows": self.buffer_rows,
@@ -291,5 +296,6 @@ class DetectorService:
 
     def health(self) -> dict:
         return {"status": "ok", "versions": {r: self.registry.version(r) for r in ROLES},
+                "live_dir": str(self.store.path.parent),
                 "n_features": len(self.features), "selector": self.selector is not None,
                 "actions": self.cfg["actions"]}

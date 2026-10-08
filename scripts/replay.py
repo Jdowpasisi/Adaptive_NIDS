@@ -35,18 +35,26 @@ def main() -> None:
     ap.add_argument("--auto-approve", action="store_true", help="rehearsal: promote when the gates pass")
     ap.add_argument("--action", default=None, help="adapt with this action instead of the recommendation")
     ap.add_argument("--idle-stop", type=float, default=None, help="live: stop after N s without a flow")
+    ap.add_argument("--rate-schedule", default=None,
+                    help="'FROM:RATE,...' flows/s from the FROM-th flow on, e.g. '0:2000,174942:200' (overrides --rate)")
+    ap.add_argument("--run-dir", default=None, help="write run outputs here instead of data/live/runs/<run-id>")
     args = ap.parse_args()
     cfg = config.load(args.config)
     run_id = args.run_id or f"{args.mode}-{time.strftime('%Y%m%dT%H%M%S')}"
-    run_dir = paths.REPO / "data/live/runs" / run_id
+    run_dir = paths.REPO / args.run_dir if args.run_dir else paths.REPO / "data/live/runs" / run_id
+    sched = [(int(a), float(b)) for a, b in (x.split(":") for x in args.rate_schedule.split(","))] \
+        if args.rate_schedule else None
     source = args.source or {"file": cfg["pcap"], "parquet": str(paths.REPLAY / "demo_flows.parquet"),
                              "live": "veth1"}[args.mode]
     monitor = None if args.no_monitor else build_monitor(cfg)
 
     def go(api: str) -> dict:
+        import signal
+
         r = ReplayRunner(cfg, api, run_dir, rate=args.rate or None, monitor=monitor, auto_adapt=args.auto_adapt,
                          auto_approve=args.auto_approve, adapt_action=args.action, labels=not args.no_labels,
-                         idle_stop=args.idle_stop)
+                         idle_stop=args.idle_stop, rate_schedule=sched)
+        signal.signal(signal.SIGTERM, lambda *_: r.stop_flag.set())     # dashboard "Stop": finish cleanly
         return r.run(FlowSource(args.mode, source, args.limit))
 
     if args.api:

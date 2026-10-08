@@ -98,6 +98,9 @@ class Registry:
                                      "path": str(initial), "since": time.time()},
                           "candidate": None, "history": []}
             self._save()
+        # C16: the first model ever deployed stays loadable as the "original" shadow (scored side by side with the
+        # active model after a promotion, so the dashboard can show adapted vs original on the same traffic)
+        self.state.setdefault("original", dict((self.state["history"] or [self.state["active"]])[0]))
         self.bundles: dict[str, Bundle] = {}
         self.get("active")
         if self.state["candidate"]:
@@ -170,5 +173,5 @@ class Registry:
 
     def summary(self) -> dict:
         s = json.loads(json.dumps(self.state, default=float))
-        return {"active": s["active"], "candidate": s["candidate"],
+        return {"active": s["active"], "candidate": s["candidate"], "original": s["original"]["version"],
                 "history": [h["version"] for h in s["history"]]}
