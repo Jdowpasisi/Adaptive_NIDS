@@ -398,3 +398,45 @@ Setup:
   rule (regret 0.005 vs 0.004).
 - Honest summary for the paper: with full-information logs, a learned selector is not needed when one adapter
   dominates. It becomes useful only when the action ranking varies with the drift.
+
+## C12: Reptile meta-learning (H6)
+
+Sources: `reports/tables/c12_long.csv` (24 folds × 33 rows, MLflow `c12`, config v2), `c12_summary.csv`,
+`c12_paired.csv`, `reports/figures/c12_h6.png`; meta-models in `models/reptile/<track>/<held-out>-s<seed>/`.
+
+Setup:
+- Leave one target out: nf43 (3 targets) and core (5 targets), 3 seeds.
+- θ₀ = the C5 MLP trained on the pooled other datasets. Reptile meta-trains from θ₀ on tasks of the form
+  (window, labelled support set of 50/200/1000), with 30% synthetic rescaled domains.
+- Inner loop = AdaBN, then 8 steps.
+- Inner optimiser and outer step: chosen per fold by meta-validation on the held-in domains' validation splits.
+  SGD lr 0.01 / ε 0.1 was chosen in 92% of folds.
+- The fair baseline is θ₀ fine-tuned with the identical steps on the identical support sets (5 draws per budget).
+
+| Mean target MCC | none | AdaBN only | 50 labels | 200 labels | 1000 labels |
+|---|---|---|---|---|---|
+| core: fine-tune θ₀ | 0.265 | 0.442 | 0.699 | 0.739 | 0.734 |
+| core: Reptile | — | 0.408 | 0.695 | 0.752 | 0.726 |
+| nf43: fine-tune θ₀ | 0.407 | −0.138 | 0.464 | 0.588 | 0.591 |
+| nf43: Reptile | — | −0.126 | 0.403 | 0.521 | 0.492 |
+
+- **H6, meta-learning part: not supported.**
+  - On core, Reptile equals plain fine-tuning from the same start: paired difference −0.004 / +0.013 / −0.008 at
+    50 / 200 / 1000 labels; it wins 47–49% of paired comparisons.
+  - On nf43 it is worse by 0.06–0.10 MCC (wins 29–49%).
+  - On the held-in validation domains Reptile did adapt better (PR-AUC 0.93 vs 0.90). That advantage does not
+    carry over to a lab it has never seen.
+- **Labels are what matter.** Both labelled methods lift the pooled model strongly (core 0.27 → 0.74; nf43
+  0.41 → 0.59 with 200 labels). Zero-shot adaptation does not: AdaBN-only gives the same result from θ₀ and from
+  the meta-model, and it hurts on NetFlow (MCC −0.13).
+- **Bug found and fixed (v1 discarded).** The first run used Adam inner steps (lr 1e-3) with outer step 0.1. Meta-
+  training then moved θ further from θ₀ (‖Δ‖ 32.5) than θ₀'s own norm (31.6), and the meta-model scored ROC-AUC
+  0.52 on its own training domain. Every v1 Reptile number was a degenerate model. v1 also picked zero-shot
+  thresholds without AdaBN. v2 selects the inner settings per fold and picks thresholds after AdaBN; ‖Δ‖/‖θ₀‖ is
+  now 0.05–0.12.
+- **Overall H6 verdict (C9–C12):**
+  - Test-time adaptation (AdaBN/Tent) helps only within one extractor family (cic77) and hurts across labs.
+  - CORAL/DANN are weaker than AdaBN on cic77 and also hurt on nf43.
+  - Meta-learned fast adaptation adds nothing over fine-tuning with the same labels.
+  - The cheapest reliable recovery is a few hundred labelled target flows: an XGBoost retrained with them reaches
+    MCC 0.92–0.94 (C9).
