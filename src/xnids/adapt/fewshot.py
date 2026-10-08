@@ -71,7 +71,11 @@ class FewShotAdapter(Adapter):
             b.threshold = metrics.threshold_at_dr(yl, b.score(Xl), ctx.target_dr)
             b.meta["threshold_source"] = f"re-picked on the {len(idx)}-flow labelled budget ({int(yl.sum())} attacks)"
         else:
-            b.meta["threshold_source"] = "frozen source threshold (too few attacks in the budget)"
+            # the model was fine-tuned / retrained, so the frozen source threshold no longer matches its score scale
+            # (C14: a retrained XGBoost alerted on every flow); re-pick on SOURCE validation, as CORAL / DANN do.
+            # Before 9 Oct 2026 the frozen threshold was kept here (C10 v2 rows with < min_attacks budget attacks).
+            self.rethreshold_on_source_val(b, ctx)
+            b.meta["threshold_source"] = "source validation (re-picked after adaptation: too few attacks in budget)"
         return b
 
     @staticmethod

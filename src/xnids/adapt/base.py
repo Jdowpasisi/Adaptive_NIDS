@@ -7,7 +7,8 @@ modified), so C10 can apply every adapter to the same starting point and C14 can
 Threshold rule (Build Guide rule 4): the threshold never comes from target TEST data.
   - input / normalisation adapters (scaling, AdaBN, Tent) keep the frozen source threshold;
   - adapters that retrain the network (CORAL, DANN) re-pick it on SOURCE validation with the adapted model;
-  - few-shot may re-pick it on its purchased label budget, and records that it did (meta["threshold_source"]).
+  - few-shot re-picks it on its purchased label budget when that holds >= min_attacks attacks, otherwise on SOURCE
+    validation (the model was changed); meta["threshold_source"] records which.
 """
 
 import copy

@@ -23,3 +23,25 @@ def label_map(labels: pl.DataFrame | None = None) -> pl.DataFrame:
 def attach(flows: pl.DataFrame, labels: pl.DataFrame | None = None) -> pl.DataFrame:
     """flows + segment/family/label/y (null where a flow is not in the label table)."""
     return flows.join(label_map(labels), on=KEY, how="left", validate="m:1")
+
+
+def flow_key_expr() -> pl.Expr:
+    """The API's flow_key string for a flow table with the KEY columns: 'src|sport|dst|dport|proto|start_us'."""
+    return pl.concat_str([pl.col(c).cast(pl.String) for c in KEY], separator="|").alias("flow_key")
+
+
+class ReplayOracle:
+    """Labels for flow_keys from the demo replay's ground truth: stands in for an analyst labelling the flows that
+    few-shot adaptation selects (C14). Raises on a key it does not know."""
+
+    def __init__(self, labels: pl.DataFrame | None = None) -> None:
+        m = label_map(labels)
+        self.y = dict(zip(m.select(flow_key_expr())["flow_key"].to_list(), m["y"].to_list(), strict=True))
+
+    def __call__(self, keys: list[str]):
+        import numpy as np
+
+        missing = [k for k in keys if k not in self.y]
+        if missing:
+            raise KeyError(f"{len(missing)} flows have no replay label, e.g. {missing[0]}")
+        return np.array([self.y[k] for k in keys], dtype=int)
