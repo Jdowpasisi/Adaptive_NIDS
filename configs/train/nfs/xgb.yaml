@@ -1,0 +1,6 @@
+_base: ../models/xgb.yaml
+# C14: XGBoost on the demo track; base model of the "xgb:fewshot(...)" action (source train + upweighted target labels,
+# the C11 best fixed action). Not the active demo model (that is the MLP).
+study: demo
+run: {name: xgb_nfs, seeds: [0]}
+data: {track: nfs, source: nfs17, targets: [nfs17, nfs18], max_rows_per_split: null}

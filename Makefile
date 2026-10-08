@@ -63,8 +63,12 @@ backup:           ## copy mlflow.db (consistent snapshot), mlruns, models, split
 TRACK ?= cic77
 matrix:
 	$(PY) scripts/matrix.py --track $(TRACK)
-api:
+api:              ## C14: detector API on :8000 (config: configs/live.yaml or $$DG_LIVE_CONFIG)
 	$(VENV)/bin/uvicorn xnids.live.api:app --host 0.0.0.0 --port 8000
+bench-api:        ## C14: p50/p99 latency for batches of 1 / 100 / 1000 -> reports/tables/c14_latency.csv
+	$(PY) scripts/bench_api.py
+walkthrough:      ## C14: demo replay through the API (monitor -> recommend -> adapt -> gates -> promote -> rollback)
+	$(PY) scripts/c14_walkthrough.py --approve --adapt-from-window 37
 dashboard:
 	$(VENV)/bin/streamlit run dashboard/app.py
 reproduce: ingest bridge tracks split

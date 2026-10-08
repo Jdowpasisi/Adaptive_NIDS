@@ -1,0 +1,25 @@
+# C14 detector service (src/xnids/live/). Paths are relative to the repo root.
+model: {name: mlp, track: nfs, source: nfs17, seed: 0}      # initial ACTIVE bundle (the C13 demo model)
+live_dir: data/live                    # live.db (scores / drift / actions) + registry.json
+candidates_dir: models/live            # bundles built by /adapt
+buffer_rows: 50000                     # recent flows kept in memory (gate checks run on all of them)
+adapt_rows: 10000                      # /adapt fits on the most recent 10,000 (2 monitor windows): the current traffic
+min_adapt_rows: 2000
+store_scores: true
+# Actions the API may run. Names follow the C10/C11 action strings; the selector chooses among these (+ wait).
+# "xgb:..." starts from the XGBoost bundle of configs/train/nfs/xgb.yaml (the C11 best fixed action). Reptile is not
+# offered: there is no meta-model on the nfs track.
+actions: [adabn, tent, scaling, "coral(lam=1.0)", "fewshot(budget=200,rule=random)",
+          "xgb:fewshot(budget=200,rule=random)", "xgb:fewshot(budget=1000,rule=random)"]
+# few-shot labels: "replay" = the demo replay's ground truth stands in for an analyst labelling the selected flows
+label_oracle: replay
+source_sample: {rows: 50000, seed: 0}  # source train / val rows for adapters that need them (CORAL, Tent guard, ...)
+canary: {attacks: 5000, benign: 5000, seed: 0}   # fixed labelled SOURCE TEST flows; never seen by any adapter
+gates:
+  canary_dr_ratio: 0.9                 # candidate canary DR >= 0.9 x active canary DR
+  canary_fpr_factor: 2.0               # candidate canary FPR <= max(2 x active, active + 0.02): no alert flood
+  canary_fpr_abs: 0.02
+  max_param_change: 0.5                # ||theta_cand - theta_active|| / ||theta_active|| (parameters, not BN stats)
+  attack_rate: [0.001, 0.95]           # candidate's predicted attack share on the buffer must lie inside
+  max_rate_ratio: 3.0                  # ... and within x3 / /3 of the active model's share on the same buffer
+metrics_window_s: 60

@@ -152,3 +152,17 @@ def test_scaling_map_stays_finite_when_target_feature_is_nearly_constant():
     out = m.transform(np.c_[np.full(5, 1e6), np.ones(5)].astype(np.float32))
     assert np.isfinite(out).all() and (out <= src.max(0) * 1.0001).all()
     assert InputMap.from_dict(m.to_dict()).to_dict() == m.to_dict()
+
+
+def test_fewshot_without_attacks_in_budget_rethresholds_on_source_val(setup):
+    """A changed model must not keep the frozen threshold (C14: a retrained XGBoost then alerted on everything)."""
+    b, ctx = setup
+    from dataclasses import replace
+
+    from xnids.eval import metrics
+
+    benign_only = replace(ctx, params={"pool_labels": np.zeros(ctx.tgt_pool.height, dtype=int)})
+    nb = adapt.get("fewshot", budget=50, rule="random", epochs=20).adapt(b, benign_only)
+    assert "source validation" in nb.meta["threshold_source"]
+    Xv, yv = ctx.src_val
+    assert metrics.rates(yv, nb.score(Xv), nb.threshold)[1] >= 0.94

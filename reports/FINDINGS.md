@@ -507,3 +507,64 @@ Setup:
   5k-flow windows of B1, against 0.1–1.7% in every window of A. Hulk detection collapses from 94% to 1%.
   Most false positives on B are 2-packet flows to SMB (445), telnet (23), HTTPS (443) and SSH (22). Windows
   hosts and internet scan noise look like the 2017 PortScan family to this model.
+
+## C14: detector API
+
+- **Service:**
+  - `src/xnids/live/` holds `api.py` (FastAPI), `service.py` (logic, usable without HTTP), `registry.py` (active,
+    candidate, history; promote / reject / rollback; gate checks) and `store.py` (SQLite `live.db` with `scores`,
+    `drift` and `actions` as the audit log). The config is `configs/live.yaml`.
+  - Endpoints follow the Build Guide, plus `/score/columns` (columnar, for C15 micro-batches), `/models/reject` and
+    `/audit`. `/adapt` registers a candidate and never promotes it. Promotion needs `approved_by`, a reason and
+    passing gates; refusals are audited.
+  - `tests/test_api.py` has 10 tests: 422 on a bad schema, promote needs approval, and rollback restores the
+    version.
+- **Latency** (`scripts/bench_api.py`, real HTTP to one uvicorn worker, scores stored; `c14_latency.csv`):
+
+| Batch | `/score` p50 / p99 | `/score/columns` p50 / p99 | Columnar throughput |
+|---|---|---|---|
+| 1 | 6.4 / 8.7 ms | 6.9 / 8.9 ms | 143 flows/s |
+| 100 | 12.9 / 21.6 ms | 11.0 / 15.6 ms | 8,900 flows/s |
+| 1,000 | 61.7 / 153 ms | 47.4 / 61 ms | 20,900 flows/s |
+
+- **Walkthrough on the demo replay** (`scripts/c14_walkthrough.py`: demo flows → API in 1,000-flow batches, the
+  C8 monitor every 5,000 flows → `/drift/report` → `/adapt` → gates → promote → rollback; `c14_walkthrough.csv`):
+  - **The C8 monitor does not work on time-ordered real traffic (affects H5).**
+    - With the original model it recommends acting in **34 of 35 windows of segment A**, the in-distribution
+      held-out 2017 traffic, and misses 8 of 10 B2 windows, where Hulk evades the model.
+    - C8's 0 false alarms were measured on *shuffled* windows. Real windows are bursty (one attack, one host's
+      activity), and per-feature KS / MMD at n = 5,000 flag every burst.
+    - Two causes were measured. First, the reference sample came from the **deduplicated** split, which drops
+      the repeated short flows (DNS) that live traffic is full of. Second, even against a raw reference,
+      windows of the same network differ by KS 0.5–0.8 from mix alone.
+    - Conditioning on predicted-benign flows does not fix it: segment A's KS stays at 0.34–0.89.
+    - **To do in C15:** calibrate the monitor on time-ordered, non-deduplicated source traffic (thresholds from
+      a null of contiguous windows, not p-values), and act only on an alert that persists for 2 windows.
+  - **Adapting inside segment B** (pool = the 10,000 most recent flows, i.e. the first two all-benign B1
+    windows; `scripts/c14_actions.sh`, `c14_actions_in_B.csv`):
+
+| Action | Gates | B1 benign FPR afterwards (original 10.75%) | B2 Hulk DR (original 5%) |
+|---|---|---|---|
+| AdaBN / scaling / CORAL | blocked: canary FPR 41% / 32% / 13% (active 2.2%) | — | — |
+| Tent | pass (its guard made no change) | 10.75% | 5.1% |
+| MLP few-shot 200 | pass | 13.5% (worse) | 5.7% |
+| **XGBoost few-shot 200** | pass | **1.5%** | 4.7% |
+| **XGBoost few-shot 1000** | pass | **0.5%** | 1.3% |
+
+  - **Reading:** this is H6 again on live traffic. The label-free adapters fit the new network's statistics and
+    then alert on the source's normal traffic; only labelled target flows fix the false positives. The selector,
+    restricted to the enabled actions, recommends XGBoost few-shot 200 (predicted gain +0.41). No action recovers
+    DoS-Hulk detection on B2, because no Hulk flow from the new network was labelled.
+  - **Gate added beyond the Build Guide: canary FPR** (candidate FPR on fixed source-test benign flows ≤ max(2 ×
+    active, active + 0.02)). The Build Guide's three gates passed AdaBN, whose benign FPR on B1 went 9% → 56%. The
+    attack-rate gate is measured on a buffer that still held segment A's attack-heavy traffic.
+  - **Gates also block a bad timing.** Adapting at the first B1 window mixes segment A's Hulk flows into the
+    budget. The threshold is then re-picked on Hulk, and the XGBoost candidate fails canary DR (82.7% < 84.4%). The
+    same happens when the budget's only attacks are the port-21 refused connections (canary DR 58%).
+- **Bug found and fixed in the C9 few-shot adapter.**
+  - With fewer than `min_attacks` attacks in the budget, it kept the frozen source threshold even though the model
+    had been retrained. A retrained XGBoost then alerted on **every** flow (threshold 0.0012, minimum score
+    0.0044). It now re-picks on source validation, as CORAL/DANN do (test added).
+  - C10 v2 rows that used the old fallback, estimated from each window's attack share: about 6 of 800 XGBoost
+    few-shot rows and about 58 of 400 MLP few-shot-50 rows. The C11 conclusion (best fixed action = XGBoost
+    few-shot 200) does not rest on them, and C10 / C11 have not been re-run.

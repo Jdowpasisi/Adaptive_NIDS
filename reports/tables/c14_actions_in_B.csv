@@ -1,0 +1,8 @@
+action,gates_passed,failed_gates,canary_dr,canary_fpr,fpr_B1,dr_B2
+"adabn",False,canary_fpr,0.9358,0.4140,0.1075,0.0505
+"tent",True,,0.9380,0.0222,0.1075,0.0505
+"scaling",False,canary_fpr,0.9802,0.3176,0.1075,0.0505
+"coral(lam=1.0)",False,canary_fpr,0.9386,0.1344,0.1075,0.0505
+"fewshot(budget=200,rule=random)",True,,0.9092,0.0230,0.1352,0.0566
+"xgb:fewshot(budget=200,rule=random)",True,,0.9332,0.0092,0.0150,0.0468
+"xgb:fewshot(budget=1000,rule=random)",True,,0.9738,0.0110,0.0054,0.0134
