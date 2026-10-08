@@ -32,7 +32,7 @@ def main() -> None:
             print(f"{ds}/{tr}: {pl.scan_parquet(out).select(pl.len()).collect().item():,} rows, valid")
 
     table = paths.TABLES / "family_counts.csv"
-    new = pl.concat(counts).select("dataset", "track", "family", "len")
+    new = pl.concat(counts).select("dataset", "track", "family", pl.col("len").cast(pl.Int64))
     if table.exists():  # keep rows for datasets/tracks not rebuilt this time
         old = pl.read_csv(table).join(new.select("dataset", "track").unique(), on=["dataset", "track"], how="anti")
         new = pl.concat([old, new])

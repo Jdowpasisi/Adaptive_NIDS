@@ -28,6 +28,9 @@ def main() -> int:
     status = 0
     for name in names:
         spec = cfg["datasets"][name]
+        if spec["fetch"]["method"] == "pcap":
+            logging.info("%s: built from PCAPs by scripts/extract_flows.py (C13), not by ingest", name)
+            continue
         try:
             res = ingest(name, spec, cfg["defaults"], delete_raw_csv=args.delete_raw_csv)
         except ManualDownloadRequired as e:

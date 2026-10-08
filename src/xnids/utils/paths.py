@@ -23,6 +23,7 @@ INTERIM = DATA / "interim"
 PROCESSED = DATA / "processed"
 SPLITS = DATA / "splits"
 LOGS = DATA / "logs"
+REPLAY = DATA / "replay"          # C13 demo.pcap + its flow labels
 MANIFEST = DATA / "MANIFEST.csv"
 
 MODELS = _env_path("DG_MODELS", REPO / "models")

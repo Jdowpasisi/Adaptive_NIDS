@@ -1,0 +1,2 @@
+dataset,base,dedup_track,scheme,split_hash,rows_in,duplicates_dropped,conflict_rows_dropped,conflict_vectors_dropped,rows_held_out,rows_kept,n_train,n_val,n_test
+nfs18,nfs18,nfs,stratified,fb33021ab3,2089815,191264,0,0,0,1898551,1139214,379772,379565

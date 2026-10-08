@@ -123,6 +123,32 @@ The dev subsample (`dev_subsample`) keeps at most 2M rows per split in family pr
 - These are not sentinels but known extractor bugs, also kept: LycoS17 has 2,270 negative `iat_min` values (down
   to −14). cic17_orig has negative durations, rates and header lengths (down to −3.2e10).
 
+## Demo data (C13): NFStream flows from raw PCAPs
+
+- **nfs17** comes from the CIC-IDS2017 Monday, Wednesday and Friday PCAPs (UNB; `data/raw/cic17_pcap/`).
+  - Flows are extracted with the frozen `configs/nfstream.yaml`, hash in `configs/nfstream.lock`. The extractor
+    adds a TCP-termination plugin so that one connection is one flow, as in CICFlowMeter and LycoSTand.
+  - Labels come from the LycoS17 rules (`xnids.data.labellers.lycos17`: epoch µs, exact attacker/victim pair).
+  - 1,556,428 flows: Benign 1,100,862, DoS 201,033, PortScan 159,275, DDoS 94,522, Bot 735, Heartbleed 1.
+  - Time-block split. The window 2017-07-05 13:30–13:55 UTC is held out of train/val/test because it is replay
+    segment A.
+- **nfs18** comes from CSE-CIC-IDS2018 Friday-16-02-2018 (AWS bucket, `scripts/fetch_cse18_pcaps.py`).
+  - Contents: the victim web server 172.31.69.25 (2 parts) plus 13 of the 152 workstation captures (the largest
+    9 capPC1 and 4 capDESKTOP hosts). SHA-256 values are in `data/MANIFEST.csv`.
+  - Labels come from the official schedule, shifted by the measured clock offset: local = UTC−4.
+    - DoS-SlowHTTPTest: 13.59.126.31 → victim, 10:12–11:08.
+    - DoS-Hulk: 18.219.193.20 → victim, 13:45–14:19.
+  - A flow seen by two capturing hosts (same 5-tuple and start time) is kept once.
+  - 2,089,815 flows: DoS-Hulk 1,808,972, DoS-SlowHTTPTest 105,550, Benign 175,293. Stratified split.
+- **Caveats:**
+  - Every 2018 SlowHTTPTest flow is a refused connection to port 21, not slow HTTP.
+  - The victim capture holds only Hulk's first 13 minutes; part 1 ends at 17:58 UTC.
+  - capDESKTOP 66.85, 66.100 and 65.29 are corrupt partway through, upstream.
+  - NFStream reports times in whole milliseconds, so exact duplicates are common: nfs17 dedup removes 44%.
+- **Replay** (`scripts/build_demo_pcap.py`, `data/replay/`):
+  - `demo.pcap` = segment A (2017, held out) + B1 + B2 (2018, time-shifted).
+  - `demo_labels.parquet` holds one label per flow, keyed by 5-tuple and start time (`xnids.live.replay_labels`).
+
 ## Known limitations and confounds
 
 - **cic17_orig is split at random, LycoS17 by time blocks.** This adds a split-scheme difference to the H2 confound. The original CIC timestamps are minute-resolution 12-hour strings with no AM/PM, so they cannot give reliable 5-minute blocks.

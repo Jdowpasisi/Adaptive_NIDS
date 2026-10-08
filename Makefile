@@ -47,6 +47,17 @@ advval:           ## C4: adversarial validation for every pair (resumable; ~4 h 
 CONFIG ?= configs/train/cic77/lda.yaml
 train:            ## C5: make train CONFIG=configs/train/<track>/<model>.yaml [ARGS='--source lycos17 --seeds 0']
 	$(PY) scripts/train.py --config $(CONFIG) $(ARGS)
+demo-data:        ## C13: fetch CSE18 PCAPs, NFStream flows, track/split, demo MLP, demo.pcap + labels, check
+	$(PY) scripts/fetch_cse18_pcaps.py
+	$(PY) scripts/extract_flows.py --dataset nfs17
+	$(PY) scripts/extract_flows.py --dataset nfs18
+	$(PY) scripts/build_tracks.py --dataset nfs17 --track nfs
+	$(PY) scripts/build_tracks.py --dataset nfs18 --track nfs
+	$(PY) scripts/split.py --dataset nfs17
+	$(PY) scripts/split.py --dataset nfs18
+	$(PY) scripts/train.py --config configs/train/nfs/mlp.yaml
+	$(PY) scripts/build_demo_pcap.py
+	$(PY) scripts/demo_check.py
 backup:           ## copy mlflow.db (consistent snapshot), mlruns, models, splits to ~/driftguard_backup
 	bash scripts/backup.sh
 TRACK ?= cic77

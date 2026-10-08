@@ -89,3 +89,21 @@ datasets:
     label_col: label
     expected_rows: 2830743
     id_cols: [flow_id, source_ip, source_port, destination_ip, destination_port, protocol, timestamp]
+
+  # C13 demo datasets: flows extracted by us with NFStream (configs/nfstream.yaml) from raw PCAPs, written straight
+  # to data/interim/<name>/<name>.parquet by scripts/extract_flows.py (ingest.py skips method: pcap).
+  nfs17:
+    title: CIC-IDS2017 PCAPs (Mon/Wed/Fri) -> NFStream flows, LycoS17 labelling rules
+    fetch: {method: pcap, url: "https://www.unb.ca/cic/datasets/ids-2017.html"}
+    label_col: label
+    expected_rows: null
+    id_cols: [flow_id, src_addr, src_port, dst_addr, dst_port, ip_prot, timestamp, end_timestamp, source_file]
+    ts_col: timestamp            # epoch microseconds (bidirectional_first_seen_ms x 1000)
+
+  nfs18:
+    title: CSE-CIC-IDS2018 Fri-16-02-2018 (victim web server + 3 workstations) -> NFStream flows, official schedule
+    fetch: {method: pcap, url: "https://www.unb.ca/cic/datasets/ids-2018.html"}
+    label_col: label
+    expected_rows: null
+    id_cols: [flow_id, src_addr, src_port, dst_addr, dst_port, ip_prot, timestamp, end_timestamp, source_file]
+    ts_col: timestamp

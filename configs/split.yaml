@@ -19,6 +19,15 @@ datasets:
   # The frozen lycos17 time-block split above is untouched. Used via data.split_variant: random.
   lycos17__random: {base: lycos17, scheme: stratified, dedup_track: cic77}
 
+  # C13 demo datasets (added 9 Oct 2026): NFStream flows from PCAPs, both have true flow start times.
+  # holdout (UTC, [start, end)): rows starting inside get NO split. Wednesday 13:30-13:55 UTC = the end of
+  # DoS-SlowHTTPTest and the start of DoS-Hulk; the demo model trains on the other minutes of both attacks and this
+  # window is replayed as segment A of replay/demo.pcap (scripts/build_demo_pcap.py).
+  nfs17:           {scheme: time_block, dedup_track: nfs, holdout: ["2017-07-05T13:30:00", "2017-07-05T13:55:00"]}
+  # nfs18 is stratified: 5-minute blocks put the 13-minute DoS-Hulk burst (1.8M flows) into train/val and leave a
+  # benign-only test split (first attempt, 9 Oct 2026, discarded before use)
+  nfs18:           {scheme: stratified, dedup_track: nfs}
+
 # Laptop dev subsample (used by the C5 harness via data.max_rows_per_split); final numbers use full splits.
 dev:
   max_rows_per_split: 2000000
