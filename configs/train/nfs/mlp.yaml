@@ -1,0 +1,6 @@
+_base: ../models/mlp.yaml
+# C13 demo model: MLP on NFStream flows of CIC-2017 (the nfs17 split excludes the demo replay's segment A window),
+# scored on held-out nfs17 test blocks and on the CSE-2018 day (nfs18). The seed-0 bundle is the C14 active model.
+study: demo
+run: {name: mlp_nfs}
+data: {track: nfs, source: nfs17, targets: [nfs17, nfs18], max_rows_per_split: null}

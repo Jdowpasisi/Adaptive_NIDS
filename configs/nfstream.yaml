@@ -1,0 +1,19 @@
+# C13 FROZEN NFStream settings: the demo model's training flows (C13) and the live/replayed flows (C15) MUST come
+# from the same extractor settings. src/xnids/live/extract.py refuses to run if this file's hash differs from
+# `frozen_hash` below (change both together, then re-extract and retrain the demo model).
+nfstreamer:
+  idle_timeout: 120          # s; CICFlowMeter's flow timeout in CIC-IDS2017/2018
+  active_timeout: 1800       # s; NFStream default; long flows are cut into 30-minute pieces
+  statistical_analysis: true # packet-size / inter-arrival / TCP-flag statistics (the model's features)
+  splt_analysis: 0
+  n_dissections: 0           # no nDPI: application names are identifiers of the lab, not behaviour
+  accounting_mode: 0         # IP-layer sizes
+  decode_tunnels: true
+  bpf_filter: null
+  n_meters: 4
+  promiscuous_mode: true
+  snapshot_length: 1536
+# end TCP flows on RST / after the FIN exchange (xnids.live.extract.TCPTermination); added 9 Oct 2026 before any
+# model was trained on these flows: without it NFStream merged ~12 port-reusing DoS-Hulk connections per flow
+tcp_termination: true
+chunk_rows: 200000           # Parquet row group per flush

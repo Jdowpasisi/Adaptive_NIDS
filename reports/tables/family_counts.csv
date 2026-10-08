@@ -75,3 +75,11 @@ nf_unsw_v2,nf43,Other,72012
 nf_unsw_v2,nf43,Recon,15078
 nf_unsw_v2,nf43,DoS,5794
 nf_unsw_v2,nf43,Bot/Backdoor,2169
+nfs17,nfs,Benign,1100862
+nfs17,nfs,DoS,201033
+nfs17,nfs,Recon,159275
+nfs17,nfs,DDoS,94522
+nfs17,nfs,Bot/Backdoor,735
+nfs17,nfs,Other,1
+nfs18,nfs,DoS,1914522
+nfs18,nfs,Benign,175293

@@ -458,3 +458,52 @@ Setup:
 
   The selector beats the fixed action on 3 of 8 held-out pairs (LycoS18 → LycoS17, NF-CSE18 → NF-UNSW, NF-ToN →
   NF-UNSW).
+
+## C13: demo data (NFStream flows, demo model, demo.pcap)
+
+- **Extractor (frozen).** `configs/nfstream.yaml`, hash `497b9ed951` (in `configs/nfstream.lock`; `extract()` refuses
+  to run if they differ). Settings: idle timeout 120 s, active timeout 1800 s, statistics on, no nDPI.
+  `xnids.live.extract.TCPTermination` ends a TCP flow on RST, or on the ACK after both FINs.
+  - **Bug found before any model was trained:** without the plugin, NFStream merged about 12.5 port-reusing DoS-Hulk
+    connections into one flow (14,080 flows, median 935 s). With it, the count is 185,549, in line with LycoS17's
+    158,988. The other families now match LycoS17 to within 1.3%: DDoS 94,522 vs 95,683, PortScan 159,275 vs
+    160,106, GoldenEye 6,753 vs 6,765, Bot 735 vs 735. The 2017 PCAP clock is UTC, as are the LycoS rules, and the
+    rules found every attack window on the exact attacker/victim pair with no reversed flows.
+- **CSE-CIC-IDS2018 without the 36 GB archive.**
+  - `scripts/fetch_cse18_pcaps.py` reads the zip's central directory with HTTP range requests, downloads only 15
+    of the 445 members of Fri-16-02-2018 (8.8 GB unpacked, against 36 GB zipped for the whole day) and checks each
+    CRC-32.
+  - **Clock offset measured:** local = UTC−4 (AST). The SlowHTTPTest source appears 14:12–15:05 UTC for a
+    scheduled 10:12–11:08, and Hulk starts 17:45:27 UTC for a scheduled 13:45. The UTC−5 assumed in the plan was
+    wrong.
+  - Three of the 13 workstation captures are corrupt partway through, upstream; the CRC matches the archive.
+- **The 2018 "DoS-SlowHTTPTest" never reached a web server.** All 105,550 flows go to **port 21**. Each is a client
+  SYN answered by a server RST (no SYN-ACK; 2 packets, 0 ms). The labels follow the official schedule, but these
+  are refused connections, which look like a port scan. The demo model flags 100% of them, for that reason.
+- **Data.**
+  - nfs17 has 1,556,428 flows. Dedup removes 44%, against about 10% for LycoS17. NFStream's millisecond
+    timing makes short flows (DNS, 2–4-packet TCP) collide, and 155k of 159k PortScan probes are exact repeats.
+  - The split is by time block, with Wed 13:30–13:55 UTC held out (146,661 rows) as replay segment A.
+  - nfs18 has 2,089,815 flows, 92% of them DoS-Hulk, from a 13-minute burst. Its split is stratified: time
+    blocks had left a benign-only test split, so that first attempt was discarded before use.
+- **Demo model** (MLP, 59 NFStream features, full nfs17 train split, 3 seeds, ~4 s per seed on GPU):
+  - Within nfs17: FPR 1.2–2.3% at DR 94–95%, MCC 0.90–0.94 (LycoS17's C5 MCC was 0.93).
+  - On nfs18 test: FPR 4.7–5.5%, DR 0.1–1.1%, MCC −0.09 to −0.18. H1 again: a detection collapse with a 2–4×
+    rise in FPR.
+  - Early stopping kept epoch 1 of 6 in every seed, because validation loss rose afterwards.
+- **demo.pcap** (2.5 GB, 272,768 flows; `data/replay/`). Segment A is the held-out 25 minutes of 2017 Wednesday.
+  Segment B1 is 2018 09:00–10:25 local: 72 minutes of workstation traffic, then the port-21 "SlowHTTPTest".
+  Segment B2 is 13:43–13:45:45 local, including the first ~20 s of Hulk. Each slice is time-shifted to follow the
+  previous one by 1 s. Labels are keyed by 5-tuple and start time; 97 keys repeat, and none disagree on the label.
+  Seed-0 model at its frozen threshold (`scripts/demo_check.py`, `c13_demo_segments.csv`, `c13_demo_fpr.png`):
+
+| Segment | Flows | Benign | Benign FPR | DR |
+|---|---|---|---|---|
+| A (2017, held out) | 174,942 | 48,915 | **0.93%** | Hulk 94.3%, SlowHTTPTest 90.4% |
+| B1 (2018) | 51,352 | 25,922 | **8.93%** | "SlowHTTPTest" (refused, port 21) 100% |
+| B2 (2018) | 46,474 | 1,545 | 7.77% | **Hulk 1.2%** |
+
+  Done-when is met: FPR jumps about 10× on the new network, with 6–10% in each of the first four (all-benign)
+  5k-flow windows of B1, against 0.1–1.7% in every window of A. Hulk detection collapses from 94% to 1%.
+  Most false positives on B are 2-packet flows to SMB (445), telnet (23), HTTPS (443) and SSH (22). Windows
+  hosts and internet scan noise look like the 2017 PortScan family to this model.

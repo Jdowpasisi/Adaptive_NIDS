@@ -7,6 +7,7 @@ on the full files. Rules are applied in the original order, so a later rule over
 as the original `.loc` assignments did. Timestamps are epoch microseconds.
 """
 
+import datetime as dt
 from collections.abc import Callable
 
 import polars as pl
@@ -76,6 +77,24 @@ def lycos17(lf: pl.LazyFrame, source_file: str, label_col: str = "label") -> pl.
     for cond, name in rules:
         label = pl.when(cond.fill_null(False)).then(pl.lit(name)).otherwise(label)
     return lf.with_columns(label.alias(label_col))
+
+
+def schedule_labels(lf: pl.LazyFrame, attacks: list[dict], day: str, utc_offset: float) -> pl.LazyFrame:
+    """C13 (CSE-CIC-IDS2018 PCAP flows): label from the official schedule. `attacks` items carry label, local
+    start/end "HH:MM", attacker and victim address lists; `day` is like "Friday-16-02-2018"; local = UTC + utc_offset.
+    A flow is an attack when it goes attacker -> victim and STARTS inside the window (epoch-us `timestamp`)."""
+    date = dt.datetime.strptime(day.split("-", 1)[1], "%d-%m-%Y").date()
+
+    def us(hhmm: str) -> int:
+        local = dt.datetime.combine(date, dt.time.fromisoformat(hhmm))
+        return int((local - dt.timedelta(hours=utc_offset)).replace(tzinfo=dt.UTC).timestamp() * 1e6)
+
+    label = pl.lit("benign")
+    for a in attacks:
+        cond = (pl.col("src_addr").is_in(a["attacker"]) & pl.col("dst_addr").is_in(a["victim"])
+                & pl.col("timestamp").is_between(us(a["start"]), us(a["end"])))
+        label = pl.when(cond).then(pl.lit(a["label"].lower().replace("-", "_"))).otherwise(label)
+    return lf.with_columns(label.alias("label"))
 
 
 LABELLERS: dict[str, Callable[..., pl.LazyFrame]] = {"lycos17": lycos17}

@@ -13,6 +13,8 @@ All randomness comes from splitmix64 on row_id / block id with the config seed, 
 assignment does not depend on the polars version or the machine.
 """
 
+import datetime as dt
+
 import numpy as np
 import polars as pl
 
@@ -139,6 +141,13 @@ def build_split(dataset: str, cfg: dict) -> tuple[pl.DataFrame, dict]:
     cols = ["row_id", "family"] + (["ts"] if dcfg["scheme"] == "time_block" else [])
     kept = (lf.select(cols).join(status.lazy().filter(pl.col("status") == "keep"), on="row_id")
             .select(cols).collect(engine="streaming"))
+    n_holdout = 0
+    if ho := dcfg.get("holdout"):
+        # a contiguous time window kept out of train/val/test entirely (C13: the demo replay's segment A)
+        lo, hi = (int(dt.datetime.fromisoformat(t).replace(tzinfo=dt.UTC).timestamp() * 1e6) for t in ho)
+        inside = pl.col("ts").is_between(lo, hi, closed="left")
+        n_holdout = kept.filter(inside).height
+        kept = kept.filter(~inside)
     if dcfg["scheme"] == "time_block":
         out, _ = time_block_split(kept, cfg["fractions"], cfg["seed"], cfg["block_minutes"] * 60_000_000)
     elif dcfg["scheme"] == "stratified":
@@ -151,7 +160,7 @@ def build_split(dataset: str, cfg: dict) -> tuple[pl.DataFrame, dict]:
               "rows_in": status.height, "duplicates_dropped": counts.get("duplicate", 0),
               "conflict_rows_dropped": counts.get("conflict", 0),
               # one representative per conflicting vector would have survived exact dedup; this is the real cost
-              "conflict_vectors_dropped": conflict_vectors, "rows_kept": out.height,
+              "conflict_vectors_dropped": conflict_vectors, "rows_held_out": n_holdout, "rows_kept": out.height,
               **{f"n_{s}": out.filter(pl.col("split") == s).height for s in SPLITS}}
     return out, report
 

@@ -1,0 +1,49 @@
+# C13 demo data. CIC-IDS2017 PCAPs (downloaded by hand from UNB, data/raw/cic17_pcap/) give the in-distribution
+# segment and the demo model's training data; one CSE-CIC-IDS2018 day gives the "different network" segment.
+cse18:
+  day: Friday-16-02-2018           # DoS-SlowHTTPTest + DoS-Hulk: the same families as CIC-2017 Wednesday
+  url: "https://cse-cic-ids2018.s3.ca-central-1.amazonaws.com/Original%20Network%20Traffic%20and%20Log%20data/Friday-16-02-2018/pcap.zip"
+  # victim web server (both attacks) + 13 of the day's 152 workstation captures (76 capPC1 / 76 capDESKTOP), the
+  # largest of each kind: ~1.7k benign flows per host-hour, so segment B carries enough benign traffic to show the
+  # false-positive jump (3 hosts were too few: 5k benign/h against 140k DoS-Hulk flows/min)
+  members:
+    - pcap/UCAP172.31.69.25-part1.pcap
+    - pcap/UCAP172.31.69.25-part2.pcap
+    - pcap/capPC1-172.31.64.31
+    - pcap/capPC1-172.31.67.124
+    - pcap/capPC1-172.31.65.80
+    - pcap/capPC1-172.31.67.59
+    - pcap/capPC1-172.31.64.32
+    - pcap/capPC1-172.31.65.117
+    - pcap/capPC1-172.31.66.69
+    - pcap/capPC1-172.31.64.48
+    - pcap/capPC1-172.31.67.108
+    - pcap/capDESKTOP-AN3U28N-172.31.66.85
+    - pcap/capDESKTOP-AN3U28N-172.31.64.35
+    - pcap/capDESKTOP-AN3U28N-172.31.66.100
+    - pcap/capDESKTOP-AN3U28N-172.31.65.29
+  # official schedule (https://www.unb.ca/cic/datasets/ids-2018.html), local time. MEASURED (C13, 9 Oct 2026): local =
+  # UTC-4 (Atlantic Standard Time). In the victim capture, 13.59.126.31 -> 172.31.69.25 runs 14:12-15:05 UTC
+  # (schedule 10:12-11:08) and 18.219.193.20 starts at 17:45:27 UTC (schedule 13:45). The victim capture holds only
+  # DoS-Hulk from 17:45:27 until part1 ends at 17:58 UTC (~140k flows/min with TCP termination); part2 starts 23:37.
+  utc_offset: -4
+  attacks:
+    - {label: DoS-SlowHTTPTest, start: "10:12", end: "11:08", attacker: [13.59.126.31, 172.31.70.23],
+       victim: [172.31.69.25, 18.217.21.148]}
+    - {label: DoS-Hulk, start: "13:45", end: "14:19", attacker: [18.219.193.20, 172.31.70.16],
+       victim: [172.31.69.25, 18.217.21.148]}
+cic17:
+  pcaps: [Monday-WorkingHours.pcap, Wednesday-workingHours.pcap, Friday-WorkingHours.pcap]
+  labeller: lycos17                # the verified LycoS17 rules (epoch times, exact attacker/victim pairs)
+
+# replay/demo.pcap = segment A then segment B, each slice time-shifted to follow the previous one (1 s gap).
+# Times are UTC [start, end). Segment A = the nfs17 split HOLDOUT window (configs/split.yaml), never trained on.
+replay:
+  segments:
+    - {name: A, source: cic17, pcap: Wednesday-workingHours.pcap, window: ["2017-07-05T13:30:00", "2017-07-05T13:55:00"]}
+    # B1: 09:00-10:25 local: 72 min of workstation-only traffic (the new network), then DoS-SlowHTTPTest
+    - {name: B1, source: cse18, window: ["2018-02-16T13:00:00", "2018-02-16T14:25:00"]}
+    # B2: 13:43-13:45:45 local: workstation traffic, then the first ~20 s of DoS-Hulk
+    - {name: B2, source: cse18, window: ["2018-02-16T17:43:00", "2018-02-16T17:45:45"]}
+  gap_s: 1
+  dedup_window: 100            # editcap -D: drop packets seen by two capturing hosts

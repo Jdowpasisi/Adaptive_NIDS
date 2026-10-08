@@ -49,3 +49,11 @@ nf_unsw_v2,Other,19409,6690,6272
 nf_unsw_v2,DoS,1812,580,643
 nf_unsw_v2,Recon,359,118,107
 nf_unsw_v2,Bot/Backdoor,111,46,38
+nfs17,Benign,321511,108490,117351
+nfs17,DDoS,54414,24167,15745
+nfs17,DoS,42801,8157,8084
+nfs17,Recon,3765,185,184
+nfs17,Bot/Backdoor,357,121,117
+nfs17,Other,1,0,0
+nfs18,DoS,1080840,360518,360284
+nfs18,Benign,58374,19254,19281
