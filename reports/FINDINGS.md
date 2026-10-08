@@ -671,3 +671,76 @@ Setup:
     label sample** (next seed, audited). The rehearsal takes that branch when the gates fail.
 - **Not verified here:** the visual layout in a real browser (headless Firefox captures before Streamlit renders).
   No backup screen recording yet; both are for the presenter (`docs/DEMO.md`).
+
+## C17: poisoning the self-updating adaptation loop (H7)
+
+- **Setup** (`src/xnids/attack/`, `scripts/poison_eval.py`, `configs/poison.yaml`; `c17_rounds.csv`, `c17_summary.csv`,
+  `c17_<target>_<adapter>.png`):
+  - The demo MLP (nfs17, 3 seeds) adapts itself for **30 rounds** on its own network. Each round's pool is 5,000
+    clean flows (source-test half A) plus ρ × 5,000 attacker flows, for ρ = 1%, 5% and 10%.
+  - Adapters: **continual AdaBN** (BN stats ← 0.7 old + 0.3 pool) and **continual Tent** (3 epochs per round,
+    with its own attack-rate guard switched off). Both start from the previous round's model.
+  - **Targets:** DDoS (the model's DR is 100%) and DoS (84%). Evaluation uses source-test half B. The attacker's
+    material comes from source train. The design is paired: every guard set sees the same pools and poison.
+  - **Attacks:**
+    - The Build Guide's **frog-boiling**: target flows moved toward benign by α = 0.8 · r / 30.
+    - **Statistic skew:** benign flows with the 5 most target-discriminative features at 5× their maximum.
+    - Added: **adaptive frog-boiling.** The attacker can query the deployed model's score, a grey-box assumption,
+      and each round injects target-family flows (interpolated toward benign) that the current model scores just
+      below its threshold.
+  - **Guards:**
+    - **canary:** refuse an update if canary DR < the *original* model's − 5 points. **canary_step:** the same check
+      against the current model.
+    - **clip:** per-update L2 ≤ 2× the median clean update.
+    - **trimmed:** 1%-trimmed AdaBN statistics.
+    - **gate:** the C14 promotion checks against the current model.
+    - **rollback:** a canary audit every 5 rounds.
+    - **all.**
+- **H7: supported, with a stronger attacker than the Build Guide's.**
+  - **The Build Guide's two attacks degrade nothing.** At ρ ≤ 10%, frog-boiling and statistic skew leave the
+    target's DR at its clean-adaptation level, for both adapters, both targets and every seed.
+  - **Continual AdaBN resists all three attacks.** Its DR on round 30 matches the unpoisoned run within 1 point.
+    The clean pools already hold about 11% real DDoS, and AdaBN has no confidence-sharpening step to exploit.
+  - **Unguarded continual Tent falls to the adaptive attacker.** The loss is slow, then sudden:
+
+| Target, ρ | Round 0 | Round 18 | Round 21 | Round 30 (mean ± std over 3 seeds) |
+|---|---|---|---|---|
+| DDoS, 10% | 100% | 98% | 55% | **1.6% ± 2.6** |
+| DDoS, 5% | 100% | 100% | 98% | 65% |
+| DoS, 10% | 84% | 80% | 75% | **67% ± 14** |
+| DoS, 5% | 84% | 82% | 81% | 74% |
+| any, 1% | no effect | | | |
+
+  - **The attack is stealthy and targeted** (DDoS, ρ = 10%, unguarded, round 30): benign FPR 0.9% (clean
+    adaptation 0.7%); other families' DR 77% (clean 81%). An operator watching false positives or alert volume
+    would see nothing.
+- **Guards** (adaptive attack on Tent, round 30; DDoS / DoS at ρ = 10%):
+
+| Guard set | DDoS DR | DoS DR | Updates accepted |
+|---|---|---|---|
+| none | 1.6% | 67% | 100% |
+| canary (vs the original model) | **98%** | **83%** | 61% / 49% |
+| rollback (audit every 5 rounds) | **100%** | **83%** | 100% (9–10 rollbacks) |
+| all | **98%** | **83%** | 61% / 49% |
+| gate (C14 checks vs the current model) | 89% | 67% | 69% / 100% |
+| canary_step (vs the current model) | 95% | 67% | 67% / 100% |
+| clip (L2 per update) | 1.6% | 67% | never binds |
+
+  - **Checks anchored to the original model or a known-good state defeat frog-boiling. Per-step checks don't.**
+    The C14 gate and canary_step compare each update with the *current* model. On DoS every step stays under the
+    5-point limit, so they never fire. On DDoS the drop around round 20 is steep enough for them to catch some of
+    it.
+  - **The L2 clip is useless here:** poisoned Tent updates are no larger than clean ones (clip rate 0%).
+  - **Trimmed AdaBN** can only be judged on AdaBN, which no attack degraded, so this experiment can't tell whether
+    it helps.
+  - **Guard costs:** with no poison, all guards accepted 100% of updates (no false refusals), and FPR was
+    unchanged. Under attack the canary freezes adaptation for 40–50% of rounds, so the model stops improving
+    instead of getting worse.
+- **Limits:**
+  - The canary holds source-validation attacks, about 70% of them DDoS, and includes DoS. **An attacker targeting
+    a family absent from the canary would likely evade every canary-based guard.** The canary should cover every
+    known family.
+  - The adaptive attacker needs score queries; with alert-only (label) feedback it would be weaker.
+  - Offline only, one network (nfs17), MLP only, 30 rounds.
+  - The human approval gate is modelled by its evidence (the C14 checks). A human who also compares with the
+    original model could do better than `gate`.

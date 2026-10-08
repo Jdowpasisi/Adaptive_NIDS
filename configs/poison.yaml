@@ -1,0 +1,22 @@
+# C17 poisoning test (H7): self-updating unsupervised adapter under injection; offline on replayed nfs17 flows.
+experiment: c17
+model: {name: mlp, track: nfs, source: nfs17}
+seeds: [0, 1, 2]                    # model seed (the three demo MLP bundles) and all sampling
+targets: [DDoS, DoS]                # demo model DR on its test flows: DDoS 100%, DoS 84% (smaller margin)
+rounds: 30
+pool_rows: 5000                     # clean flows per adaptation round (source TEST half A); + rho x pool_rows poison
+rhos: [0.01, 0.05, 0.10]
+attacks:
+  frog: {alpha_max: 0.8}            # target-family flows moved toward benign: alpha_r = 0.8 * r / rounds
+  skew: {k: 5, scale: 5.0}          # benign flows, top-5 target-discriminative features at 5 x max, target side
+  frog_adaptive: {candidates: 20000}  # beyond the Build Guide: grey-box, queries the deployed model's score each round
+adapters:
+  adabn: {momentum: 0.3}            # continual AdaBN: BN stats <- 0.7 old + 0.3 pool
+  tent: {lr: 0.001, epochs: 3, batch_size: 512, guard_factor: 1.0e+9}   # Tent's own attack-rate guard OFF
+guard_sets: [none, canary, canary_step, clip, trimmed, gate, rollback, all]
+canary: {attacks: 5000, benign: 5000, seed: 0}    # fixed labelled flows from source VAL (target family included)
+canary_drop: 0.05                   # refuse / roll back when canary DR falls more than 5 points
+trim: 0.01                          # trimmed AdaBN: drop the top and bottom 1% per channel
+clip_multiplier: 2.0                # radius = 2 x median per-round update norm of the CLEAN (rho = 0) run
+audit_every: 5                      # rollback audit period (rounds)
+eval: {benign: 20000, seed: 0}      # source TEST half B: all target / other-attack flows + 20k benign
