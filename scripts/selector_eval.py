@@ -38,9 +38,11 @@ def lopo(table: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         chosen = sel.choose_table(te)
         g = te.pivot_table(index="scenario_id", columns="action", values="gain")
         oracle_a, oracle_u = g.idxmax(axis=1), g.max(axis=1)
-        fixed = tr.groupby("action").gain.mean().idxmax()          # best single action on the TRAINING pairs
+        everywhere = table.groupby("action").scenario_id.nunique() == table.scenario_id.nunique()
+        cand = tr[tr.action.isin(everywhere[everywhere].index)]     # actions that exist in EVERY window (Reptile
+        fixed = cand.groupby("action").gain.mean().idxmax()          # exists only on nf43); best on TRAINING pairs
         rng = np.random.default_rng(0)
-        rand = pd.Series(rng.choice(g.columns, len(g)), index=g.index)
+        rand = pd.Series([rng.choice(row.dropna().index) for _, row in g.iterrows()], index=g.index)
         pred = te[te.action != "wait"].assign(pred=sel.predict(te[te.action != "wait"])[0])
         rho = spearmanr(pred.pred, pred.gain).statistic
         methods = {"selector": chosen.action, "always-tent": pd.Series(cfg["tent_action"], index=g.index),

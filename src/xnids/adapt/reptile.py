@@ -70,3 +70,61 @@ def reptile(net: nn.Module, sample_task: Callable[[np.random.Generator], Task], 
         if log_every and logger and (it + 1) % log_every == 0:
             logger(it + 1, float(sum(d.norm() for d in delta.values())))
     return net
+
+
+# ---------------------------------------------------------------- C10 / C11 / C14 action
+
+def load_meta_bundle(track: str, held_out: str, seed: int, device: str = "auto"):
+    """The Reptile meta-model trained WITHOUT `held_out` (models/reptile/<track>/<held_out>-s<seed>/) as a Bundle."""
+    import json
+
+    from xnids.models import zoo
+    from xnids.models.bundle import Bundle
+    from xnids.models.mlp import InputScaler, MLPNet
+    from xnids.models.preprocess import Preprocessor
+    from xnids.utils import paths
+
+    d = paths.MODELS / "reptile" / track / f"{held_out}-s{seed}"
+    meta = json.loads((d / "meta.json").read_text())
+    m = zoo.build("mlp", {}, seed=seed, device=device)
+    m.scaler = InputScaler.from_dict(json.loads((d / "scaler.json").read_text()))
+    m.net = MLPNet(meta["d_in"]).to(m.device)
+    m.net.load_state_dict(torch.load(d / "meta.pt", map_location=m.device))
+    m.net.eval()
+    pre = Preprocessor.load(d / "preprocess.json")
+    return Bundle(m, pre, float(meta["thr_meta"]), pre.features_in,
+                  {"version": f"reptile-{track}-{held_out}-s{seed}", **meta})
+
+
+class ReptileAdapter:
+    """Switch to the meta-model trained without this target, AdaBN on the unlabelled pool, k Adam steps on `budget`
+    randomly bought labels, threshold re-picked on them when they hold >= min_attacks attacks (as few-shot)."""
+    name = "reptile"
+    needs_labels = True
+
+    def __init__(self, budget: int = 200, track: str = "nf43", held_out: str = "", seed: int = 0, k: int = 8,
+                 lr: float = 1e-3, batch: int = 64, min_attacks: int = 5) -> None:
+        self.p = dict(budget=budget, track=track, held_out=held_out, seed=seed, k=k, lr=lr, batch=batch,
+                      min_attacks=min_attacks)
+
+    def adapt(self, _deployed, ctx):
+        from xnids.eval import metrics
+
+        p = self.p
+        b = load_meta_bundle(p["track"], p["held_out"], p["seed"])
+        m = b.model
+        to = lambda X: torch.from_numpy(m.scaler.transform(b.model_input(X))).to(m.device)  # noqa: E731
+        rng = np.random.default_rng(ctx.seed)
+        idx = np.sort(rng.choice(ctx.tgt_pool.height, min(p["budget"], ctx.tgt_pool.height), replace=False))
+        oracle = ctx.params["pool_labels"]
+        yl = np.asarray(oracle(idx) if callable(oracle) else np.asarray(oracle)[idx])
+        task = Task(to(ctx.tgt_pool), to(ctx.tgt_pool[idx]), torch.as_tensor(yl, dtype=torch.float32, device=m.device))
+        inner_adapt(m.net, task, p["k"], p["lr"], p["batch"], torch.Generator().manual_seed(ctx.seed))
+        b.meta.update({"adapter": f"reptile_{p['budget']}", "labels_used": int(len(idx)),
+                       "budget_attacks": int(yl.sum())})
+        if yl.sum() >= p["min_attacks"]:
+            b.threshold = metrics.threshold_at_dr(yl, b.score(ctx.tgt_pool[idx]), 0.95)
+            b.meta["threshold_source"] = f"re-picked on the {len(idx)}-flow labelled budget"
+        else:
+            b.meta["threshold_source"] = "meta-model's pooled-validation threshold (too few attacks in the budget)"
+        return b

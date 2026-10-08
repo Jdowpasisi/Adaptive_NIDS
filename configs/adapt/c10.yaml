@@ -1,6 +1,6 @@
 # C10: full-information adaptation logs (every action on every drift window) -> training data for the C11 selector.
 experiment: c10
-version: 1
+version: 2                            # 2: + Reptile actions on nf43 pairs (C12)
 seeds: [0, 1, 2]                      # bundle seeds; window w uses seed w % 3
 data: {max_rows_per_split: 2000000, min_per_family: 5000, dev_seed: 0}
 pairs:                                # [track, source, target]
@@ -41,6 +41,11 @@ actions:
   xgb:
     - {name: fewshot, budget: 200, rule: random}
     - {name: fewshot, budget: 1000, rule: random}
+  reptile_tracks: [nf43]              # C12 meta-models exist only where >= 3 domains share a feature space
+  reptile:                            # switch to the meta-model trained WITHOUT the target, AdaBN, 8 steps on n labels
+    - {budget: 50}
+    - {budget: 200}
+    - {budget: 1000}
 
 monitor:                              # the C8 monitor settings (configs/drift.yaml), with a lighter MMD for speed
   reference: {n: 20000, seed: 0}

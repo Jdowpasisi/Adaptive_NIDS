@@ -23,6 +23,7 @@ import polars as pl
 
 from xnids import adapt
 from xnids.adapt.base import AdaptContext
+from xnids.adapt.reptile import ReptileAdapter
 from xnids.drift.adwin import ConfidenceADWIN
 from xnids.drift.monitor import DriftMonitor
 from xnids.eval import harness, metrics
@@ -124,6 +125,12 @@ def run_pair(cfg: dict, track: str, src: str, tgt: str, n_windows: int | None) -
                 for a in cfg["actions"]["mlp_per_pair"]:
                     nb, secs = per_pair[(s, label(a))]
                     add(model, b0, label(a), a, nb, 0, secs)
+                if track in cfg["actions"].get("reptile_tracks", []):   # switch to the meta-model trained without tgt
+                    for a in cfg["actions"]["reptile"]:
+                        t1 = time.time()
+                        nb = ReptileAdapter(track=track, held_out=tgt, seed=s, **a).adapt(None, ctx)
+                        add("reptile", b0, label({"name": "reptile", **a}), a, nb, int(nb.meta["labels_used"]),
+                            time.time() - t1)
         logging.info("%s->%s window %d/%d (%s, %d flows, seed %d) done", src, tgt, w + 1, len(windows), win.kind,
                      win.size, s)
     df = pd.DataFrame(rows)
