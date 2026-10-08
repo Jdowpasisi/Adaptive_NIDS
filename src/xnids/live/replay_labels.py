@@ -37,6 +37,17 @@ class ReplayOracle:
     def __init__(self, labels: pl.DataFrame | None = None) -> None:
         m = label_map(labels)
         self.y = dict(zip(m.select(flow_key_expr())["flow_key"].to_list(), m["y"].to_list(), strict=True))
+        # live mode: capture timestamps are wall-clock, so fall back to the 5-tuple where it carries ONE label
+        # (96.5% of the demo's flows)
+        t = (m.with_columns(tup=pl.concat_str([pl.col(c).cast(pl.String) for c in KEY[:-1]], separator="|"))
+             .group_by("tup").agg(pl.col("y").first(), pl.col("label").n_unique().alias("_n"))
+             .filter(pl.col("_n") == 1))
+        self.y_tuple = dict(zip(t["tup"].to_list(), t["y"].to_list(), strict=True))
+
+    def get(self, key: str, default=None):
+        """Label of a flow_key: exact key, else its 5-tuple when unambiguous, else default."""
+        y = self.y.get(key)
+        return y if y is not None else self.y_tuple.get(key.rsplit("|", 1)[0], default)
 
     def __call__(self, keys: list[str]):
         import numpy as np

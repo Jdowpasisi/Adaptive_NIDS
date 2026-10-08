@@ -87,3 +87,37 @@ def test_monitor_end_to_end_flags_switch_only():
     assert reps[2].top_features[0] == "a" and reps[2].detectors["combined"]
     assert set(reps[0].features()) >= {"ks_max", "mmd_p", "adwin_flag", "est_fpr_rise", "attack_share_pred"}
     assert reps[2].to_json().startswith("{")
+
+
+def test_calibrated_monitor_ignores_mix_change_and_alerts_on_new_traffic_after_persist():
+    """C15: an attack burst of KNOWN traffic (mix change) must not alert; traffic unlike the reference must, but only
+    once it has persisted for `persist` windows."""
+    rng = np.random.default_rng(3)
+
+    def frame(n, attack_share, shift=0.0):
+        y = (rng.random(n) < attack_share).astype(int)
+        X = rng.normal(size=(n, 3)).astype(np.float32)
+        X[:, 1] += 3.0 * y
+        X[:, 0] += shift
+        return pl.DataFrame(np.abs(X) * 10, schema=NAMES), y
+
+    Xs, ys = frame(20000, 0.3)
+    Xv, yv = frame(5000, 0.3)
+    pre = Preprocessor().fit(Xs)
+    m = zoo.build("mlp", {"max_epochs": 5, "batch_size": 256, "hidden": [32, 16]}, seed=0, device="cpu").fit(
+        pre.transform(Xs), ys, pre.transform(Xv), yv)
+    b = Bundle(m, pre, 0.5, NAMES, {})
+    cfg = {"mode": "calibrated", "persist": 2, "reference": {"n": 5000},
+           "mmd": {"n_perm": 20, "n_ref": 300, "n_win": 300, "pca_dims": None}}
+    mon = DriftMonitor(b, Xs, ys, cfg)
+    tau = mon.novelty.calibrate_tau(pre.transform(Xv), 0.99)
+    assert tau > 0
+    known = [mon.novelty.share(pre.transform(frame(3000, a)[0])) for a in (0.3, 0.9)]   # normal, attack burst
+    new = mon.novelty.share(pre.transform(frame(3000, 0.3, shift=8.0)[0]))
+    assert max(known) < 0.05 < 0.5 < new
+    mon.thresholds["novelty_share"] = 0.05
+    reps = mon.run([frame(3000, 0.9)[0], frame(3000, 0.3, 8.0)[0], frame(3000, 0.3, 8.0)[0],
+                    frame(3000, 0.3, 8.0)[0]])
+    assert [r.detectors["novelty"] for r in reps] == [False, True, True, True]
+    assert [r.recommend for r in reps] == [False, False, True, True]          # persist = 2 windows
+    assert [r.streak for r in reps] == [0, 1, 2, 3]

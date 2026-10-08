@@ -98,6 +98,30 @@ def _sha1_head(p: Path, n: int = 1 << 20) -> str:
         return hashlib.sha1(fh.read(n)).hexdigest()
 
 
+def stream_flows(source: str | Path, ordered: bool = True) -> Iterator[tuple[list[str], list]]:
+    """One (column names, values) per flow, as NFStream emits it (C15: the replay runner micro-batches these).
+    Same frozen settings as extract(); turn a list of values into the tidy frame with tidy_rows().
+
+    ordered=True runs ONE meter. With several, each meter handles its share of the packets at its own pace and their
+    flows interleave from far-apart points of the capture (C15: segment-B flows filled 16-50% of segment-A windows).
+    The meter count changes parallelism only, not the content of a flow, so the frozen config hash still applies."""
+    from nfstream import NFStreamer
+
+    check_frozen()
+    c = nfs_cfg()
+    udps = [TCPTermination()] if c.get("tcp_termination") else None
+    kw = c["nfstreamer"] | ({"n_meters": 1} if ordered else {})
+    cols = None
+    for f in NFStreamer(source=str(source), udps=udps, **kw):
+        if cols is None:
+            cols = f.keys()
+        yield cols, f.values()
+
+
+def tidy_rows(cols: list[str], rows: list) -> pd.DataFrame:
+    return _tidy(pd.DataFrame(rows, columns=cols))
+
+
 def to_parquet(source: str | Path, out: Path, extra: dict | None = None) -> int:
     """Stream extract(source) into `out` (zstd Parquet); `extra` constant columns are added (e.g. source_file).
     Writes <out>.meta.json with the nfstream hash and the row count. Returns the number of flows."""
