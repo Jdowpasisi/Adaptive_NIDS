@@ -1,6 +1,6 @@
 # C12: Reptile meta-learning, leave-one-target-out (H6).
 experiment: c12
-version: 1
+version: 2                            # 2: inner optimiser / outer step chosen per fold by meta-validation
 seeds: [0, 1, 2]
 tracks:                               # meta-learning needs >= 3 domains in one feature space (cic77 has only 2)
   nf43: [nf_unsw_v2, nf_cse_cic18_v2, nf_ton_v2]
@@ -9,7 +9,15 @@ data: {max_rows_per_split: 2000000, min_per_family: 5000, dev_seed: 0}
 pretrain:                             # theta_0: the MLP of C5, trained on the pooled meta-training datasets
   rows_per_dataset: 300000            # per dataset, from its train split (val likewise, 100k)
   params: {hidden: [256, 128, 64], dropout: 0.2, lr: 0.001, batch_size: 4096, max_epochs: 50, patience: 5}
-reptile: {iters: 3000, k: 8, inner_lr: 0.001, eps0: 0.1, meta_batch: 4, batch: 64}
+reptile: {iters: 3000, k: 8, meta_batch: 4, batch: 64}
+# v1 used Adam (lr 1e-3) inner steps with eps0 0.1: meta-training drifted ||theta - theta_0|| beyond ||theta_0|| and
+# destroyed the pretrained network. Each fold now meta-trains both settings below and keeps the one with the best
+# meta-validation score on the HELD-IN domains' validation splits (no held-out-target data). Fine-tuning baselines
+# use the selected setting's inner optimiser and lr, so Reptile and fine-tune take identical steps.
+reptile_grid:
+  - {inner_opt: sgd, inner_lr: 0.01, eps0: 0.1}       # Build Guide sketch: plain SGD inner steps
+  - {inner_opt: adam, inner_lr: 0.001, eps0: 0.01}    # Adam inner steps, 10x smaller outer step
+meta_val: {tasks_per_domain: 5, support: 200}         # few-step adaptation scored by PR-AUC on the rest of each window
 tasks:
   window: 5000                        # unlabelled pool of a task (AdaBN); the support set is drawn from it
   support_sizes: [50, 200, 1000]

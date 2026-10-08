@@ -4,8 +4,11 @@ from a new target adapt it well.
 Correction to the project-guide sketch (Build Guide C12): the inner steps run on the TARGET task's support set, not
 on the source task. A task is (dataset, window, labelled support set S, query set Q).
 
-Inner loop: k Adam steps (lr 1e-3, as in the Reptile paper's experiments) on mini-batches of S, after AdaBN on the
-task's unlabelled pool, because BatchNorm statistics are not meta-learned (the same happens at deployment).
+Inner loop: k optimiser steps (plain SGD, as in the Build Guide sketch, or Adam) on mini-batches of S, after AdaBN on
+the task's unlabelled pool, because BatchNorm statistics are not meta-learned (the same happens at deployment).
+Meta-training starts from a good pretrained theta_0, so the outer step must stay small: Adam's fixed-size inner
+steps with eps0 0.1 over 3,000 iterations moved theta further from theta_0 than theta_0's own norm and destroyed
+the network (first full C12 run). The setting is now selected per fold by meta-validation (scripts/reptile_eval.py).
 Outer loop: theta <- theta + eps * mean_task(theta_task - theta), eps decayed linearly; BN running statistics of
 theta are left as pretrained (only parameters are meta-updated).
 """
@@ -29,13 +32,14 @@ class Task:
 
 
 def inner_adapt(net: nn.Module, task: Task, k: int, lr: float, batch: int, gen: torch.Generator,
-                do_adabn: bool = True) -> nn.Module:
-    """AdaBN on the pool, then k Adam steps of class-weighted BCE on the support set. Modifies net in place."""
+                do_adabn: bool = True, opt_name: str = "adam") -> nn.Module:
+    """AdaBN on the pool, then k optimiser steps (Adam or plain SGD) of class-weighted BCE on the support set.
+    Modifies net in place."""
     if do_adabn and len(task.pool) > 1:
         adabn_(net, task.pool, batch_size=4096)
     pos = (task.ys == 0).sum() / (task.ys == 1).sum().clamp(min=1)
     loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos)
-    opt = torch.optim.Adam(net.parameters(), lr=lr)
+    opt = torch.optim.Adam(net.parameters(), lr=lr) if opt_name == "adam" else torch.optim.SGD(net.parameters(), lr=lr)
     net.eval()                                    # BN uses the (AdaBN) running stats; support batches can be tiny
     n = len(task.Xs)
     for _ in range(k):
@@ -49,7 +53,7 @@ def inner_adapt(net: nn.Module, task: Task, k: int, lr: float, batch: int, gen: 
 
 def reptile(net: nn.Module, sample_task: Callable[[np.random.Generator], Task], iters: int = 3000, k: int = 8,
             inner_lr: float = 1e-3, eps0: float = 0.1, meta_batch: int = 4, batch: int = 64, seed: int = 0,
-            log_every: int = 0, logger=None) -> nn.Module:
+            log_every: int = 0, logger=None, inner_opt: str = "adam") -> nn.Module:
     """In place: theta <- theta + eps * mean(theta_task - theta) over meta_batch tasks per iteration."""
     rng = np.random.default_rng(seed)
     gen = torch.Generator().manual_seed(seed)
@@ -60,7 +64,7 @@ def reptile(net: nn.Module, sample_task: Callable[[np.random.Generator], Task], 
         delta = {n: torch.zeros_like(p) for n, p in base.items()}
         for _ in range(meta_batch):
             fast = copy.deepcopy(net)
-            inner_adapt(fast, sample_task(rng), k, inner_lr, batch, gen)
+            inner_adapt(fast, sample_task(rng), k, inner_lr, batch, gen, opt_name=inner_opt)
             for n, p in fast.named_parameters():
                 delta[n] += (p.detach() - base[n]) / meta_batch
         with torch.no_grad():
@@ -103,8 +107,8 @@ class ReptileAdapter:
     needs_labels = True
 
     def __init__(self, budget: int = 200, track: str = "nf43", held_out: str = "", seed: int = 0, k: int = 8,
-                 lr: float = 1e-3, batch: int = 64, min_attacks: int = 5) -> None:
-        self.p = dict(budget=budget, track=track, held_out=held_out, seed=seed, k=k, lr=lr, batch=batch,
+                 batch: int = 64, min_attacks: int = 5) -> None:
+        self.p = dict(budget=budget, track=track, held_out=held_out, seed=seed, k=k, batch=batch,
                       min_attacks=min_attacks)
 
     def adapt(self, _deployed, ctx):
@@ -119,7 +123,8 @@ class ReptileAdapter:
         oracle = ctx.params["pool_labels"]
         yl = np.asarray(oracle(idx) if callable(oracle) else np.asarray(oracle)[idx])
         task = Task(to(ctx.tgt_pool), to(ctx.tgt_pool[idx]), torch.as_tensor(yl, dtype=torch.float32, device=m.device))
-        inner_adapt(m.net, task, p["k"], p["lr"], p["batch"], torch.Generator().manual_seed(ctx.seed))
+        inner_adapt(m.net, task, p["k"], b.meta["inner_lr"], p["batch"], torch.Generator().manual_seed(ctx.seed),
+                    opt_name=b.meta["inner_opt"])                       # the inner settings selected in C12
         b.meta.update({"adapter": f"reptile_{p['budget']}", "labels_used": int(len(idx)),
                        "budget_attacks": int(yl.sum())})
         if yl.sum() >= p["min_attacks"]:

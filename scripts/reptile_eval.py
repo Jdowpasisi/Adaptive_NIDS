@@ -95,7 +95,7 @@ def run_target(cfg: dict, track: str, target: str, s: int, iters: int | None) ->
         tr, va = load(ds, "train"), load(ds, "val")
         it = np.sort(rng.choice(tr.X.height, min(n_tr, tr.X.height), replace=False))
         iv = np.sort(rng.choice(va.X.height, min(n_tr // 3, va.X.height), replace=False))
-        trs[ds], vas[ds] = (tr.X[it], tr.y[it], tr.family[it]), (va.X[iv], va.y[iv])
+        trs[ds], vas[ds] = (tr.X[it], tr.y[it], tr.family[it]), (va.X[iv], va.y[iv], va.family[iv])
     pre = Preprocessor().fit(pl.concat([v[0] for v in trs.values()]))
     Xtr = np.vstack([pre.transform(v[0]) for v in trs.values()])
     ytr = np.concatenate([v[1] for v in trs.values()])
@@ -120,12 +120,51 @@ def run_target(cfg: dict, track: str, target: str, s: int, iters: int | None) ->
         T = to_net(model, X)
         return Task(T, T[:n], torch.as_tensor(dom.y[idx][:n], dtype=torch.float32, device=model.device))
 
-    rp = rcfg["reptile"]
-    meta = reptile(copy.deepcopy(theta0), sample_task, iters=rp["iters"], k=rp["k"], inner_lr=rp["inner_lr"],
-                   eps0=rp["eps0"], meta_batch=rp["meta_batch"], batch=rp["batch"], seed=s,
-                   log_every=max(1, rp["iters"] // 5), logger=lambda i, nd: LOG.info("%s/%s s%d meta-iter %d |delta| %.4f",
-                                                                                      track, target, s, i, nd))
-    thr_meta = metrics.threshold_at_dr(yva, score(model, meta, Xva), 0.95)
+    rp, mvc = rcfg["reptile"], rcfg["meta_val"]
+    val_domains = [Domain(ds, pre.transform(vas[ds][0]), vas[ds][1], vas[ds][2]) for ds in others]
+
+    def meta_val(net, st: dict) -> float:
+        """Few-step adaptation on HELD-IN validation windows: AdaBN + k steps on a support set, PR-AUC on the rest."""
+        r = np.random.default_rng(10_000 + s)
+        out = []
+        for dom in val_domains:
+            for _ in range(mvc["tasks_per_domain"]):
+                idx = dom.window(r, tc["window"], tuple(tc["benign_share"]))
+                T, y = to_net(model, dom.X[idx]), dom.y[idx]
+                n = mvc["support"]
+                f = inner_adapt(copy.deepcopy(net), Task(T, T[:n], torch.as_tensor(y[:n], dtype=torch.float32,
+                                                                                    device=model.device)),
+                                rp["k"], st["inner_lr"], rp["batch"], torch.Generator().manual_seed(s), opt_name=st["inner_opt"])
+                f.eval()
+                with torch.no_grad():
+                    q = torch.sigmoid(f(T[n:])).cpu().numpy()
+                if 0 < y[n:].sum() < len(q):
+                    out.append(metrics.evaluate(y[n:], q, 0.5)["pr_auc"])
+        return float(np.mean(out))
+
+    cands = []
+    for st in rcfg["reptile_grid"]:
+        m_c = reptile(copy.deepcopy(theta0), sample_task, iters=rp["iters"], k=rp["k"], inner_lr=st["inner_lr"],
+                      eps0=st["eps0"], meta_batch=rp["meta_batch"], batch=rp["batch"], seed=s, inner_opt=st["inner_opt"],
+                      log_every=max(1, rp["iters"] // 5),
+                      logger=lambda i, nd, st=st: LOG.info("%s/%s s%d %s meta-iter %d |delta| %.4f", track, target, s,
+                                                           st["inner_opt"], i, nd))
+        drift = float(torch.cat([(a.detach() - b.detach()).flatten() for a, b in
+                                 zip(m_c.parameters(), theta0.parameters(), strict=True)]).norm())
+        cands.append({"setting": st, "net": m_c, "meta_val": meta_val(m_c, st), "finetune_val": meta_val(theta0, st),
+                      "drift": drift})
+        LOG.info("%s/%s s%d %s: meta-val PR-AUC reptile %.3f vs fine-tune %.3f, ||theta-theta0|| %.2f", track, target,
+                 s, st, cands[-1]["meta_val"], cands[-1]["finetune_val"], drift)
+    best = max(cands, key=lambda c: c["meta_val"])
+    meta, st = best["net"], best["setting"]
+    norm0 = float(torch.cat([p.detach().flatten() for p in theta0.parameters()]).norm())
+
+    def thr_after_adabn(net) -> float:          # thresholds in the deployment condition: AdaBN, then score
+        a_ = copy.deepcopy(net)
+        adabn_(a_, to_net(model, Xva[np.random.default_rng(s).choice(len(Xva), min(20000, len(Xva)), replace=False)]))
+        return metrics.threshold_at_dr(yva, score(model, a_, Xva), 0.95)
+
+    thr_meta, thr0_adabn = thr_after_adabn(meta), thr_after_adabn(theta0)
     train_min = (time.time() - t0) / 60
 
     tgt_tr, tgt_te = load(target, "train"), load(target, "test")
@@ -140,7 +179,7 @@ def run_target(cfg: dict, track: str, target: str, s: int, iters: int | None) ->
     add("pooled-none", 0, 0, theta0, thr0)
     a0 = copy.deepcopy(theta0)
     adabn_(a0, pool)
-    add("pooled-adabn", 0, 0, a0, thr0)
+    add("pooled-adabn", 0, 0, a0, thr0_adabn)
     am = copy.deepcopy(meta)
     adabn_(am, pool)
     add("reptile-adabn", 0, 0, am, thr_meta)
@@ -151,16 +190,17 @@ def run_target(cfg: dict, track: str, target: str, s: int, iters: int | None) ->
             task = Task(pool, to_net(model, Ztr[sup]), torch.as_tensor(tgt_tr.y[sup], dtype=torch.float32,
                                                                        device=model.device))
             n_att = int(tgt_tr.y[sup].sum())
-            for name, start, fallback in (("finetune", theta0, thr0), ("reptile", meta, thr_meta)):
-                f = inner_adapt(copy.deepcopy(start), task, rp["k"], rp["inner_lr"], rp["batch"],
-                                torch.Generator().manual_seed(gen_seed + rep))
+            for name, start, fallback in (("finetune", theta0, thr0_adabn), ("reptile", meta, thr_meta)):
+                f = inner_adapt(copy.deepcopy(start), task, rp["k"], st["inner_lr"], rp["batch"],
+                                torch.Generator().manual_seed(gen_seed + rep), opt_name=st["inner_opt"])
                 if n_att >= ec["min_attacks"]:
                     thr = metrics.threshold_at_dr(tgt_tr.y[sup], score(model, f, Ztr[sup]), 0.95)
                 else:
                     thr = fallback
                 add(f"{name}-{n}", n, rep, f, thr, {"support_attacks": n_att,
                                                     "threshold_on_support": n_att >= ec["min_attacks"]})
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame(rows).assign(selected=f"{st['inner_opt']}/eps{st['eps0']}", meta_val=best["meta_val"],
+                                   finetune_val=best["finetune_val"], drift_ratio=best["drift"] / norm0)
     out = paths.MODELS / "reptile" / track / f"{target}-s{s}"
     out.mkdir(parents=True, exist_ok=True)
     torch.save(meta.state_dict(), out / "meta.pt")
@@ -168,12 +208,19 @@ def run_target(cfg: dict, track: str, target: str, s: int, iters: int | None) ->
     pre.save(out / "preprocess.json")
     (out / "scaler.json").write_text(json.dumps(model.scaler.to_dict()))
     (out / "meta.json").write_text(json.dumps({"track": track, "held_out": target, "trained_on": others, "seed": s,
-                                               "thr_meta": thr_meta, "thr0": thr0, "cfg_hash": h,
-                                               "d_in": Xtr.shape[1]}, indent=1))
+                                               "thr_meta": thr_meta, "thr0": thr0, "thr0_adabn": thr0_adabn,
+                                               "cfg_hash": h, "d_in": Xtr.shape[1], **st,
+                                               "meta_val": best["meta_val"], "finetune_val": best["finetune_val"],
+                                               "drift_norm": best["drift"], "theta0_norm": norm0}, indent=1))
     with log.start_run(rcfg | {"run": {"name": "c12"}}, seed=s, experiment=cfg["experiment"],
                        run_name=f"c12-{track}-{target}", tags={"track": track, "target": target}) as run:
         mlflow.set_tag("cfg_hash", h)
         mlflow.log_metric("train_minutes", train_min)
+        mlflow.log_params({"selected_inner_opt": st["inner_opt"], "selected_eps0": st["eps0"]})
+        for c in cands:
+            tag = f"{c['setting']['inner_opt']}_eps{c['setting']['eps0']}"
+            mlflow.log_metrics({f"metaval/{tag}/reptile": c["meta_val"], f"metaval/{tag}/finetune": c["finetune_val"],
+                                f"drift/{tag}": c["drift"]})
         for m, v in df.groupby("method").mcc_at_thr.mean().items():
             mlflow.log_metric(f"mcc/{m}", v)
         df["run_id"] = run.info.run_id
