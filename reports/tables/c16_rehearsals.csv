@@ -1,0 +1,4 @@
+run,alerts_in_segment_a,action,rebuilds,replay started,switch to segment B,drift alert,"candidate built (xgb:fewshot(budget=200,rule=random))",gates FAILED (canary_fpr): reject & rebuild,candidate rebuilt (seed 1),approved and promoted,side by side after approval: FPR original 7.4% vs adapted 0.4%,rolled back,audit log complete,fpr_original_after,fpr_adapted_after,side by side after approval: FPR original 7.4% vs adapted 0.8%,side by side after approval: FPR original 7.4% vs adapted 0.7%
+1,0,"xgb:fewshot(budget=200,rule=random)",1,0.6,91.8,125.7,127.0,127.0,127.7,127.9,168.7,168.9,169.1,0.07390084190832553,0.004009087264466123,,
+2,0,"xgb:fewshot(budget=200,rule=random)",0,0.2,91.4,125.3,127.0,,,127.2,,168.1,168.2,0.07412868632707775,0.007639726578206675,167.9,
+3,0,"xgb:fewshot(budget=200,rule=random)",0,0.2,93.2,124.9,126.3,,,126.6,,167.4,167.5,0.07397959183673469,0.007116004296455424,,167.2

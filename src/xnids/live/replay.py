@@ -92,7 +92,7 @@ class ReplayRunner:
     def __init__(self, cfg: dict, api: str, run_dir: Path, rate: float | None = None, monitor=None,
                  auto_adapt: bool = False, auto_approve: bool = False, adapt_action: str | None = None,
                  labels: bool = True, idle_stop: float | None = None, client: httpx.Client | None = None,
-                 features: list[str] | None = None) -> None:
+                 features: list[str] | None = None, rate_schedule: list[tuple[int, float]] | None = None) -> None:
         self.cfg, self.api, self.rate = cfg, api.rstrip("/"), rate
         self.run_dir = Path(run_dir)
         self.run_dir.mkdir(parents=True, exist_ok=True)
@@ -106,6 +106,36 @@ class ReplayRunner:
         self.adapted = False
         self.max_end = 0
         self.idle_stop = idle_stop                     # live mode: stop after this many seconds without a flow
+        # C16 demo pacing: [(from_flow, rate), ...] e.g. fast through segment A, slow in B (overrides `rate`)
+        self.schedule = sorted(rate_schedule) if rate_schedule else None
+        self.sent_total = 0
+        self.stop_flag = threading.Event()             # set by a caller (dashboard) to stop the replay early
+        self._last_status = 0.0
+
+    def current_rate(self) -> float | None:
+        if not self.schedule:
+            return self.rate
+        r = self.rate
+        for start, rate in self.schedule:
+            if self.sent_total >= start:
+                r = rate or None
+        return r
+
+    def _status(self, done: bool = False) -> None:
+        """data for the dashboard: <run_dir>/status.json, at most once a second (and at the end)."""
+        now = time.time()
+        if not done and now - self._last_status < 1.0:
+            return
+        self._last_status = now
+        recent = [b for b in self.batches if b["t"] >= now - 10]
+        st = {"t": now, "flows_sent": self.sent_total, "rate_target": self.current_rate(),
+              "flows_per_s_10s": sum(b["n"] for b in recent) / 10 if recent else 0.0,
+              "lag_p50_s": self.batches[-1]["lag_p50_s"] if self.batches else None,
+              "lag_p95_s": self.batches[-1]["lag_p95_s"] if self.batches else None,
+              "windows_done": len(self.windows), "done": done}
+        tmp = self.run_dir / "status.tmp"
+        tmp.write_text(json.dumps(st))
+        tmp.replace(self.run_dir / "status.json")
 
     # ---------------------------------------------------------------- monitor thread
     def _monitor_loop(self, client: httpx.Client) -> None:
@@ -200,9 +230,11 @@ class ReplayRunner:
             t_start, allowance, win_buf, wid = time.monotonic(), 0.0, [], 0
             next_tick = t_start
             last_flow = time.monotonic()
-            while not source.exhausted():
+            while not source.exhausted() and not self.stop_flag.is_set():
                 if source.error:
                     raise source.error
+                self.rate = self.current_rate() if self.schedule else self.rate
+                self._status()
                 if self.idle_stop and source.produced and time.monotonic() - last_flow > self.idle_stop:
                     break
                 if self.rate:
@@ -217,6 +249,7 @@ class ReplayRunner:
                         break
                     self._send(client, df, win_buf)
                     sent += df.height
+                    self.sent_total += df.height
                     win_buf, wid = self._flush_window(win_buf, wid)
                 allowance -= sent
                 if sent:
@@ -236,6 +269,7 @@ class ReplayRunner:
             if self.monitor is not None:
                 self.win_q.put(None)
                 mon_t.join()
+        self._status(done=True)
         b = pl.DataFrame(self.batches)
         b.write_csv(self.run_dir / "batches.csv")
         if self.windows:
