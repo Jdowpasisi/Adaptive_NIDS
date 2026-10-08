@@ -1,0 +1,23 @@
+# C12: Reptile meta-learning, leave-one-target-out (H6).
+experiment: c12
+version: 1
+seeds: [0, 1, 2]
+tracks:                               # meta-learning needs >= 3 domains in one feature space (cic77 has only 2)
+  nf43: [nf_unsw_v2, nf_cse_cic18_v2, nf_ton_v2]
+  core: [lycos17, lycos18, nf_unsw_v2, nf_cse_cic18_v2, nf_ton_v2]
+data: {max_rows_per_split: 2000000, min_per_family: 5000, dev_seed: 0}
+pretrain:                             # theta_0: the MLP of C5, trained on the pooled meta-training datasets
+  rows_per_dataset: 300000            # per dataset, from its train split (val likewise, 100k)
+  params: {hidden: [256, 128, 64], dropout: 0.2, lr: 0.001, batch_size: 4096, max_epochs: 50, patience: 5}
+reptile: {iters: 3000, k: 8, inner_lr: 0.001, eps0: 0.1, meta_batch: 4, batch: 64}
+tasks:
+  window: 5000                        # unlabelled pool of a task (AdaBN); the support set is drawn from it
+  support_sizes: [50, 200, 1000]
+  benign_share: [0.5, 0.97]           # attack-mix resampling per task (families Dirichlet(1))
+  synthetic_prob: 0.3                 # share of tasks on a synthetic domain:
+  scale_range: [0.5, 2.0]             #   every raw feature multiplied by its own U(0.5, 2) factor
+eval:
+  budgets: [50, 200, 1000]
+  repeats: 5                          # support-set draws per budget
+  pool_rows: 20000                    # unlabelled target pool for AdaBN (target TRAIN split)
+  min_attacks: 5                      # threshold re-picked on the support set only with >= 5 attacks
