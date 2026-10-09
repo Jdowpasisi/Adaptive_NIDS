@@ -70,9 +70,11 @@ def main() -> None:
         ben = g.filter(pl.col("y") == 0)
         row = {"segment": seg[0], "flows": g.height, "benign": ben.height, "attacks": g.height - ben.height,
                "fpr": ben["alert"].mean() if ben.height else np.nan}
-        for lbl, a in g.filter(pl.col("y") == 1).group_by("label"):
-            row[f"dr_{lbl[0]}"] = a["alert"].mean()
-            row[f"n_{lbl[0]}"] = a.height
+        att = g.filter(pl.col("y") == 1)
+        for lbl in sorted(att["label"].unique()):                 # sorted: a deterministic column order
+            a = att.filter(pl.col("label") == lbl)
+            row[f"dr_{lbl}"] = a["alert"].mean()
+            row[f"n_{lbl}"] = a.height
         rows.append(row)
     seg = pl.DataFrame(rows, strict=False)
     seg.write_csv(paths.TABLES / "c13_demo_segments.csv")

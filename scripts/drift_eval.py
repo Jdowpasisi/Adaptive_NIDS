@@ -2,6 +2,7 @@
 
     python scripts/drift_eval.py                       # every pair x seed in configs/drift.yaml
     python scripts/drift_eval.py --pairs 0 --seeds 0   # Mid-Sem demo: LycoS17 -> LycoS18 only
+    python scripts/drift_eval.py --summary-only        # rebuild tables + figures from the finished MLflow runs
 
 Per (pair, seed), with a fresh monitor (ADWIN state reset) for each stream:
   nodrift  held-out SOURCE validation flows (not in the reference sample): exchangeable with the reference, so
@@ -101,15 +102,43 @@ def eval_pair(cfg: dict, track: str, src: str, tgt: str, s: int) -> tuple[list[d
     for r in rows:
         r.update({"track": track, "source": src, "target": tgt, "seed": s})
 
-    tops = collections.Counter(f for r in sw[len(pre):] for f in r.top_features)
-    expl = {"track": track, "source": src, "target": tgt, "seed": s,
+    return rows, explanation(track, src, tgt, s, sw, len(pre)), sw
+
+
+def explanation(track: str, src: str, tgt: str, s: int, sw: list, n_pre: int) -> dict:
+    """What the monitor said after the switch (from the switch-stream reports alone: rebuildable from MLflow)."""
+    tops = collections.Counter(f for r in sw[n_pre:] for f in r.top_features)
+    return {"track": track, "source": src, "target": tgt, "seed": s,
             "top5_post_switch": [f for f, _ in tops.most_common(5)],
-            "example_message": sw[len(pre)].message,
-            "est_error_rise_pre": float(np.mean([r.est_fpr_rise for r in sw[:len(pre)]])),
-            "est_error_rise_post": float(np.mean([r.est_fpr_rise for r in sw[len(pre):]])),
-            "attack_share_pred_pre": float(np.mean([r.attack_share_pred for r in sw[:len(pre)]])),
-            "attack_share_pred_post": float(np.mean([r.attack_share_pred for r in sw[len(pre):]]))}
-    return rows, expl, sw
+            "example_message": sw[n_pre].message,
+            "est_error_rise_pre": float(np.mean([r.est_fpr_rise for r in sw[:n_pre]])),
+            "est_error_rise_post": float(np.mean([r.est_fpr_rise for r in sw[n_pre:]])),
+            "attack_share_pred_pre": float(np.mean([r.attack_share_pred for r in sw[:n_pre]])),
+            "attack_share_pred_post": float(np.mean([r.attack_share_pred for r in sw[n_pre:]]))}
+
+
+def from_mlflow(cfg: dict, track: str, src: str, tgt: str, s: int, cfg_hash: str | None = None):
+    """The rows, explanation and switch reports of the latest finished run of this pair x seed (no recompute);
+    with cfg_hash, only a run of exactly that configuration counts (resume)."""
+    from xnids.drift.monitor import DriftReport
+
+    tags = {"cfg_hash": cfg_hash} if cfg_hash else {}
+    runs = log.find_runs(experiment=cfg["experiment"], finished_only=True, track=track, source=src, target=tgt,
+                         seed=str(s), **tags)
+    if runs.empty:
+        return None
+    rid = runs.sort_values("start_time").run_id.iloc[-1]
+    rows = pd.read_parquet(mlflow.artifacts.download_artifacts(run_id=rid, artifact_path="drift_eval.parquet"))
+    text = mlflow.artifacts.load_text(f"runs:/{rid}/switch_reports.jsonl")
+    sw = []
+    for ln in text.splitlines():
+        d = json.loads(ln)
+        d["ks"] = {k: tuple(v) for k, v in d["ks"].items()}
+        d["mmd"] = tuple(d["mmd"])
+        sw.append(DriftReport(**d))
+    expl = explanation(track, src, tgt, s, sw, cfg["eval"]["streams"]["switch_pre"])
+    expl["run_id"] = rid
+    return rows.to_dict("records"), expl, sw
 
 
 def c4_overlap(expl: pd.DataFrame) -> pd.DataFrame:
@@ -200,6 +229,7 @@ def main() -> None:
     ap.add_argument("--config", default="configs/drift.yaml")
     ap.add_argument("--pairs", default=None, help="comma list of pair indices (default: all)")
     ap.add_argument("--seeds", default=None)
+    ap.add_argument("--summary-only", action="store_true", help="rebuild tables / figures from finished MLflow runs")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(asctime)s %(message)s", datefmt="%H:%M:%S")
     for noisy in ("mlflow", "alembic", "urllib3"):
@@ -212,9 +242,31 @@ def main() -> None:
     all_rows, expls = [], []
     for track, src, tgt in sel:
         for s in seeds:
+            if args.summary_only:
+                got = from_mlflow(cfg, track, src, tgt, s)
+                if got is None:
+                    logging.warning("no finished run for %s->%s seed %d", src, tgt, s)
+                    continue
+                rows, expl, sw = got
+                all_rows += rows
+                expls.append(expl)
+                if s == seeds[0]:
+                    plot_switch(sw, cfg["eval"]["streams"]["switch_pre"], track, src, tgt,
+                                cfg["monitor"]["mmd"]["alpha"])
+                continue
             seed.set_seed(s)
             run_cfg = {k: v for k, v in cfg.items() if k != "eval"} | {
                 "eval": {**cfg["eval"], "pairs": [[track, src, tgt]]}}
+            got = from_mlflow(cfg, track, src, tgt, s, config.cfg_hash(run_cfg))       # resume: already done
+            if got is not None:
+                rows, expl, sw = got
+                all_rows += rows
+                expls.append(expl)
+                if s == seeds[0]:
+                    plot_switch(sw, cfg["eval"]["streams"]["switch_pre"], track, src, tgt,
+                                cfg["monitor"]["mmd"]["alpha"])
+                logging.info("%s->%s seed %d: finished run reused", src, tgt, s)
+                continue
             with log.start_run(run_cfg, seed=s, experiment=cfg["experiment"], run_name=f"drift-{src}-{tgt}",
                                tags={"track": track, "source": src, "target": tgt}) as run:
                 rows, expl, sw = eval_pair(cfg, track, src, tgt, s)

@@ -93,14 +93,22 @@ def plot(res: pd.DataFrame) -> None:
 
 
 def main() -> None:
+    import argparse
+    import contextlib
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--tables-only", action="store_true",
+                    help="rebuild the tables / figure only: no MLflow run, the deployed selector is not refitted")
+    args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(asctime)s %(message)s", datefmt="%H:%M:%S")
     for noisy in ("mlflow", "alembic", "urllib3"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
     logdf = pd.read_parquet(paths.LOGS / "adapt_log.parquet")
     cfg = CFG
     all_res, summ = [], []
-    with log.start_run(cfg | {"run": {"name": "c11"}, "log_rows": len(logdf)}, experiment=cfg["experiment"],
-                       run_name="c11-lopo") as run:
+    ctx = contextlib.nullcontext() if args.tables_only else log.start_run(
+        cfg | {"run": {"name": "c11"}, "log_rows": len(logdf)}, experiment=cfg["experiment"], run_name="c11-lopo")
+    with ctx as run:
         for util in cfg["utilities"]:
             for lc in cfg["label_costs"]:
                 if util == "fpr" and lc not in (0.0, cfg["headline"]["label_cost"]):
@@ -120,6 +128,9 @@ def main() -> None:
         h = cfg["headline"]
         head = res[(res.utility_metric == h["utility"]) & (res.label_cost == h["label_cost"])]
         plot(head)
+        if args.tables_only:
+            print(summ.round(4).to_string(index=False))
+            return
         for _, r in summ[(summ.utility_metric == h["utility"]) & (summ.label_cost == h["label_cost"])].iterrows():
             mlflow.log_metric(f"regret/{r.method}", r.regret)
         # the deployable selector: all pairs, headline utility

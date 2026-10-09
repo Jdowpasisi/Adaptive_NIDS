@@ -1,0 +1,191 @@
+file,sha256,component,step,kind,command,experiments,mlflow_runs,runs_file,unchanged_by_rebuild,git_commit
+figures/advval_cic77.png,b6b7335f4fa731a8,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+figures/advval_core.png,ff6ff41eea85388c,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+figures/advval_nf43.png,48a96a1c50c795fc,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+figures/c10_sanity.png,bf08632188df0555,C10,c10_logs,mlflow,python scripts/build_logs.py --summary-only,c10,17,provenance/c10_logs_runs.csv,True,d5dfe01
+figures/c11_regret.png,e85a4c1df56215f3,C11,c11_selector,mlflow,python scripts/selector_eval.py --tables-only,c10;c11,19,provenance/c11_selector_runs.csv,True,d5dfe01
+figures/c12_h6.png,aa39b4616be95564,C12,c12_reptile,mlflow,python scripts/reptile_eval.py --summary-only,c12,24,provenance/c12_reptile_runs.csv,True,d5dfe01
+figures/c13_demo_fpr.png,fdeb53fd5f752536,C13,c13_demo,derived,python scripts/demo_check.py,train,4,provenance/c13_demo_runs.csv,True,d5dfe01
+figures/c15_load.png,f0e0101cb9791214,C15,c15_load,pipeline,python scripts/load_test.py,,0,,True,d5dfe01
+figures/c15_rehearsal.png,f42710ac5e25d26f,C15,c15_rehearsal_fig,derived,python scripts/plot_replay.py --run file-rehearsal,,0,,True,d5dfe01
+figures/c17_ddos_adabn.png,b669e521930b8d05,C17,c17_poison,mlflow,python scripts/poison_eval.py --summary-only,c17,1,provenance/c17_poison_runs.csv,True,d5dfe01
+figures/c17_ddos_tent.png,01b22261dc8fb3a3,C17,c17_poison,mlflow,python scripts/poison_eval.py --summary-only,c17,1,provenance/c17_poison_runs.csv,True,d5dfe01
+figures/c17_dos_adabn.png,161236ce2b08f193,C17,c17_poison,mlflow,python scripts/poison_eval.py --summary-only,c17,1,provenance/c17_poison_runs.csv,True,d5dfe01
+figures/c17_dos_tent.png,39f3442611304e32,C17,c17_poison,mlflow,python scripts/poison_eval.py --summary-only,c17,1,provenance/c17_poison_runs.csv,True,d5dfe01
+figures/c7_share_mcc.png,ada26638a9a97747,C7,c7_ablation,mlflow,python scripts/ablation.py --summary-only,c7,333,provenance/c7_ablation_runs.csv,True,d5dfe01
+figures/c9_before_after.png,19348ca06f99c8f8,C9,c9_adapt,mlflow,python scripts/adapt_eval.py --summary-only,c9,33,provenance/c9_adapt_runs.csv,True,d5dfe01
+figures/drift_switch_cic77_lycos17_lycos18.png,1527375498f3b240,C8,c8_drift,mlflow,python scripts/drift_eval.py --summary-only,drift,24,provenance/c8_drift_runs.csv,True,d5dfe01
+figures/drift_switch_cic77_lycos18_lycos17.png,06452dd5345d204c,C8,c8_drift,mlflow,python scripts/drift_eval.py --summary-only,drift,24,provenance/c8_drift_runs.csv,True,d5dfe01
+figures/drift_switch_nf43_nf_cse_cic18_v2_nf_ton_v2.png,64de2ccafa8a555a,C8,c8_drift,mlflow,python scripts/drift_eval.py --summary-only,drift,24,provenance/c8_drift_runs.csv,True,d5dfe01
+figures/drift_switch_nf43_nf_cse_cic18_v2_nf_unsw_v2.png,4aa729077cddd95f,C8,c8_drift,mlflow,python scripts/drift_eval.py --summary-only,drift,24,provenance/c8_drift_runs.csv,True,d5dfe01
+figures/drift_switch_nf43_nf_ton_v2_nf_cse_cic18_v2.png,7a7f3f67fb552090,C8,c8_drift,mlflow,python scripts/drift_eval.py --summary-only,drift,24,provenance/c8_drift_runs.csv,True,d5dfe01
+figures/drift_switch_nf43_nf_ton_v2_nf_unsw_v2.png,12f3e957e8e0f6a5,C8,c8_drift,mlflow,python scripts/drift_eval.py --summary-only,drift,24,provenance/c8_drift_runs.csv,True,d5dfe01
+figures/drift_switch_nf43_nf_unsw_v2_nf_cse_cic18_v2.png,412184cf45a17485,C8,c8_drift,mlflow,python scripts/drift_eval.py --summary-only,drift,24,provenance/c8_drift_runs.csv,True,d5dfe01
+figures/drift_switch_nf43_nf_unsw_v2_nf_ton_v2.png,1063a39ce9f7e3b1,C8,c8_drift,mlflow,python scripts/drift_eval.py --summary-only,drift,24,provenance/c8_drift_runs.csv,True,d5dfe01
+figures/h4_benign_fpr_over_time.png,9f2de870c61a9e6b,C7,c7_h4,mlflow,python scripts/timedrift.py --summary-only,c7,12,provenance/c7_h4_runs.csv,True,d5dfe01
+figures/matrix_cic77_dr_at_thr.png,e3d43bd859ccbbce,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/matrix_cic77_fpr_at_thr.png,c97e89b0ef3e3e56,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/matrix_cic77_mcc_at_thr.png,82849dec57b445b3,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/matrix_cic77_oracle_fpr_at_dr.png,cf838db2680e2af6,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/matrix_core_dr_at_thr.png,890a0aaeab908f04,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/matrix_core_fpr_at_thr.png,9c7b5890cf4f0441,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/matrix_core_mcc_at_thr.png,4c8ab8f35838ba29,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/matrix_core_oracle_fpr_at_dr.png,17caae6d0f4604fa,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/matrix_nf43_dr_at_thr.png,3af168afe2a2dc47,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/matrix_nf43_fpr_at_thr.png,03ca5cd9df6119a2,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/matrix_nf43_mcc_at_thr.png,c4ce17d80e9abb07,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/matrix_nf43_oracle_fpr_at_dr.png,83a4b17e585a955b,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/within_vs_cross_cic77.png,bfa929f488d8c7e5,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/within_vs_cross_core.png,6e441fc793e99520,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+figures/within_vs_cross_nf43.png,e0be904b061e2e01,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/advval/cic77__lycos17__lycos18__all.csv,e7f02ed710cc4f58,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/cic77__lycos17__lycos18__benign.csv,c76a742312ffb808,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos17__lycos18__all.csv,d7be26069eea2081,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos17__lycos18__benign.csv,efa6c29cfd5ce8b7,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos17__nf_cse_cic18_v2__all.csv,51324be785455a7f,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos17__nf_cse_cic18_v2__benign.csv,f97c1ede4cd5a3cb,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos17__nf_ton_v2__all.csv,1ccbd163339b8de3,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos17__nf_ton_v2__benign.csv,32dba3d3721d8be8,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos17__nf_unsw_v2__all.csv,c0c39f71828d7330,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos17__nf_unsw_v2__benign.csv,2cc75284d4a08434,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos18__nf_cse_cic18_v2__all.csv,30d80a878cca0af0,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos18__nf_cse_cic18_v2__benign.csv,927ac5d088915861,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos18__nf_ton_v2__all.csv,9499cc3267475fb8,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos18__nf_ton_v2__benign.csv,0dc271ce2054002f,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos18__nf_unsw_v2__all.csv,0b4bf4f8c6d5ad28,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__lycos18__nf_unsw_v2__benign.csv,431aed3e578ae479,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__nf_cse_cic18_v2__nf_ton_v2__all.csv,cf590812ab1e7f51,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__nf_cse_cic18_v2__nf_ton_v2__benign.csv,90720337f69b34fb,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__nf_unsw_v2__nf_cse_cic18_v2__all.csv,7cd2a18706ac1dbd,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__nf_unsw_v2__nf_cse_cic18_v2__benign.csv,b5c75a5f3c046998,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__nf_unsw_v2__nf_ton_v2__all.csv,aa6a865bc0a833ae,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/core__nf_unsw_v2__nf_ton_v2__benign.csv,289de63195a3aaed,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/nf43__nf_cse_cic18_v2__nf_ton_v2__all.csv,4d681d0fce88df09,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/nf43__nf_cse_cic18_v2__nf_ton_v2__benign.csv,7767ec2d642e7877,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/nf43__nf_unsw_v2__nf_cse_cic18_v2__all.csv,e4ccbd5c247686ce,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/nf43__nf_unsw_v2__nf_cse_cic18_v2__benign.csv,0af11e0203470080,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/nf43__nf_unsw_v2__nf_ton_v2__all.csv,740d6d2063ef2ee2,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval/nf43__nf_unsw_v2__nf_ton_v2__benign.csv,5efc52c1346d76bf,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval_lab_features.json,0b072f0235062e33,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/advval_summary.csv,840b3ff9c9d15627,C4,c4_advval,mlflow,python scripts/advval.py --summary-only,advval,84,provenance/c4_advval_runs.csv,True,d5dfe01
+tables/bridge_check.csv,cca4da7f4b1c8d6b,C2,c2_bridge,derived,python scripts/bridge_check.py,,0,,True,d5dfe01
+tables/bridge_check_summary.csv,73a9b034b12287b9,C2,c2_bridge,derived,python scripts/bridge_check.py,,0,,True,d5dfe01
+tables/c10_summary.csv,0d89aaf404d51f6a,C10,c10_logs,mlflow,python scripts/build_logs.py --summary-only,c10,17,provenance/c10_logs_runs.csv,True,d5dfe01
+tables/c11_lopo.csv,2a6a347926140bfd,C11,c11_selector,mlflow,python scripts/selector_eval.py --tables-only,c10;c11,19,provenance/c11_selector_runs.csv,True,d5dfe01
+tables/c11_summary.csv,21c47709d5de73fd,C11,c11_selector,mlflow,python scripts/selector_eval.py --tables-only,c10;c11,19,provenance/c11_selector_runs.csv,True,d5dfe01
+tables/c12_long.csv,cfb1f14690ea5499,C12,c12_reptile,mlflow,python scripts/reptile_eval.py --summary-only,c12,24,provenance/c12_reptile_runs.csv,True,d5dfe01
+tables/c12_paired.csv,0431657ef879dd19,C12,c12_reptile,mlflow,python scripts/reptile_eval.py --summary-only,c12,24,provenance/c12_reptile_runs.csv,True,d5dfe01
+tables/c12_summary.csv,460d597ad1070805,C12,c12_reptile,mlflow,python scripts/reptile_eval.py --summary-only,c12,24,provenance/c12_reptile_runs.csv,True,d5dfe01
+tables/c13_demo_segments.csv,5c16a51e1e792b8f,C13,c13_demo,derived,python scripts/demo_check.py,train,4,provenance/c13_demo_runs.csv,True,d5dfe01
+tables/c14_actions_in_B.csv,b700ae519debeea0,C14,c14_actions,pipeline,bash scripts/c14_actions.sh,,0,,True,d5dfe01
+tables/c14_latency.csv,89d34088e3e09f92,C14,c14_latency,pipeline,python scripts/bench_api.py,,0,,True,d5dfe01
+tables/c14_walkthrough.csv,5b901c4f2043d119,C14,c14_walkthrough,pipeline,python scripts/c14_walkthrough.py --approve --adapt-from-window 37,,0,,True,d5dfe01
+tables/c15_load.csv,4046c580a2912417,C15,c15_load,pipeline,python scripts/load_test.py,,0,,True,d5dfe01
+tables/c15_monitor_demo.csv,fe1ba845b67fb971,C15,c15_monitor,pipeline,python scripts/calibrate_monitor.py,,0,,True,d5dfe01
+tables/c15_monitor_null.csv,4c4a129b085ba195,C15,c15_monitor,pipeline,python scripts/calibrate_monitor.py,,0,,True,d5dfe01
+tables/c16_rehearsals.csv,2fd09b8f6147d6ca,C16,c16_rehearsal,pipeline,python scripts/rehearse_demo.py,,0,,True,d5dfe01
+tables/c17_rounds.csv,1bbc85c09f22ab10,C17,c17_poison,mlflow,python scripts/poison_eval.py --summary-only,c17,1,provenance/c17_poison_runs.csv,True,d5dfe01
+tables/c17_summary.csv,08fd2e11a59c2cea,C17,c17_poison,mlflow,python scripts/poison_eval.py --summary-only,c17,1,provenance/c17_poison_runs.csv,True,d5dfe01
+tables/c7_long.csv,8f43f504312fbe50,C7,c7_ablation,mlflow,python scripts/ablation.py --summary-only,c7,333,provenance/c7_ablation_runs.csv,True,d5dfe01
+tables/c7_norm_shares.csv,348ff9901abad7f8,C7,c7_ablation,mlflow,python scripts/ablation.py --summary-only,c7,333,provenance/c7_ablation_runs.csv,True,d5dfe01
+tables/c7_shares.csv,05f7f4043d016b87,C7,c7_ablation,mlflow,python scripts/ablation.py --summary-only,c7,333,provenance/c7_ablation_runs.csv,True,d5dfe01
+tables/c9_long.csv,8195f0133ad9aac3,C9,c9_adapt,mlflow,python scripts/adapt_eval.py --summary-only,c9,33,provenance/c9_adapt_runs.csv,True,d5dfe01
+tables/c9_summary.csv,9301c6bf882bd06b,C9,c9_adapt,mlflow,python scripts/adapt_eval.py --summary-only,c9,33,provenance/c9_adapt_runs.csv,True,d5dfe01
+tables/cantone_comparison.csv,b3261a96283cb6e9,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/clean_cic17_orig.csv,2b0b8fb3301b6720,C3,c3_split,pipeline,python scripts/split.py --dataset all,,0,,True,d5dfe01
+tables/clean_lycos17.csv,478bb5b61b78d8ab,C3,c3_split,pipeline,python scripts/split.py --dataset all,,0,,True,d5dfe01
+tables/clean_lycos17__random.csv,9287c4087c95c2cf,C3,c3_split,pipeline,python scripts/split.py --dataset all,,0,,True,d5dfe01
+tables/clean_lycos18.csv,a8ffe303683e0cd4,C3,c3_split,pipeline,python scripts/split.py --dataset all,,0,,True,d5dfe01
+tables/clean_nf_cse_cic18_v2.csv,f280c348084290d1,C3,c3_split,pipeline,python scripts/split.py --dataset all,,0,,True,d5dfe01
+tables/clean_nf_ton_v2.csv,5200173f123b404d,C3,c3_split,pipeline,python scripts/split.py --dataset all,,0,,True,d5dfe01
+tables/clean_nf_unsw_v2.csv,e07f1c5a29451a00,C3,c3_split,pipeline,python scripts/split.py --dataset all,,0,,True,d5dfe01
+tables/clean_nfs17.csv,4399893de5269a12,C3,c3_split,pipeline,python scripts/split.py --dataset all,,0,,True,d5dfe01
+tables/clean_nfs18.csv,835db3d626016bb9,C3,c3_split,pipeline,python scripts/split.py --dataset all,,0,,True,d5dfe01
+tables/drift_eval_long.csv,4df4967c275d353a,C8,c8_drift,mlflow,python scripts/drift_eval.py --summary-only,drift,24,provenance/c8_drift_runs.csv,True,d5dfe01
+tables/drift_explanations.csv,e0dc51f5432e3176,C8,c8_drift,mlflow,python scripts/drift_eval.py --summary-only,drift,24,provenance/c8_drift_runs.csv,True,d5dfe01
+tables/drift_h5.csv,4503034d8b4e0cfd,C8,c8_drift,mlflow,python scripts/drift_eval.py --summary-only,drift,24,provenance/c8_drift_runs.csv,True,d5dfe01
+tables/drift_h5_by_track.csv,bdcb9d4432918e19,C8,c8_drift,mlflow,python scripts/drift_eval.py --summary-only,drift,24,provenance/c8_drift_runs.csv,True,d5dfe01
+tables/drift_vs_retraining.csv,5bf691eba0f2de09,C8,c8_drift,mlflow,python scripts/drift_eval.py --summary-only,drift,24,provenance/c8_drift_runs.csv,True,d5dfe01
+tables/family_counts.csv,2bdbd3e61683e809,C2,c2_tracks,pipeline,python scripts/build_tracks.py,,0,,True,d5dfe01
+tables/h1_checks.csv,bcd45f488f22c8fd,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/h2_original_vs_corrected.csv,9c100fa3111b1948,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/h4_by_day.csv,b7aacd7c0e0ebe8e,C7,c7_h4,mlflow,python scripts/timedrift.py --summary-only,c7,12,provenance/c7_h4_runs.csv,True,d5dfe01
+tables/h4_summary.csv,77fb4ec797293803,C7,c7_h4,mlflow,python scripts/timedrift.py --summary-only,c7,12,provenance/c7_h4_runs.csv,True,d5dfe01
+tables/h4_timedrift.csv,df5937dffefc8d6c,C7,c7_h4,mlflow,python scripts/timedrift.py --summary-only,c7,12,provenance/c7_h4_runs.csv,True,d5dfe01
+tables/labels_cic17_orig.csv,6a98b8c78596817c,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/labels_lycos17.csv,25893b885f189ee5,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/labels_lycos18.csv,5f35b19a6dcf6877,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/labels_nf_cse_cic18_v2.csv,be6fd7884eef6c85,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/labels_nf_ton_v2.csv,f17232dbff81bf57,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/labels_nf_unsw_v2.csv,225d79f40dca2386,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/matrix_cic77.csv,ab65f14c97f1a5d3,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic77_dr_at_thr.csv,8c5351a3657cf71a,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic77_dr_at_thr.tex,9c9609af8da76489,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic77_fpr_at_thr.csv,09efcf4919d85844,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic77_fpr_at_thr.tex,72406c087cf506ec,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic77_mcc_at_thr.csv,bd2ec234f75b1230,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic77_mcc_at_thr.tex,ab1e129308be0dfc,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic77_oracle_fpr_at_dr.csv,a17825b8e25cc8be,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic77_oracle_fpr_at_dr.tex,cd51f966c91cd1c9,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic77_pr_auc.csv,e293401ea79d0600,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic77_pr_auc.tex,23e5b2fa8470904d,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic_orig.csv,89471cfd36f5a2d2,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic_orig_dr_at_thr.csv,beaabed1cecbec07,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic_orig_dr_at_thr.tex,fb88ff459f7a2e02,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic_orig_fpr_at_thr.csv,0b10eb529ea7f5f0,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic_orig_fpr_at_thr.tex,f14d0cddcc5cec2c,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic_orig_mcc_at_thr.csv,bc39b90d8a71efc1,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic_orig_mcc_at_thr.tex,32ca27bb841a8f38,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic_orig_oracle_fpr_at_dr.csv,7096543784c53512,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic_orig_oracle_fpr_at_dr.tex,23f1d28c45db3374,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic_orig_pr_auc.csv,34a2952dad46e5fb,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_cic_orig_pr_auc.tex,4a8b05cecf4cec8c,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_core.csv,d1e68ae5b572c69e,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_core_dr_at_thr.csv,a835c8571a5abf94,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_core_dr_at_thr.tex,4de911b180a2a36a,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_core_fpr_at_thr.csv,11b124ba00488f7c,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_core_fpr_at_thr.tex,60d1c2ccbd39e30e,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_core_mcc_at_thr.csv,bb4ba2a31a650b11,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_core_mcc_at_thr.tex,1a84dbea8d84f350,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_core_oracle_fpr_at_dr.csv,a3e7a538d46904d7,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_core_oracle_fpr_at_dr.tex,b828bfcf23774874,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_core_pr_auc.csv,76c7456aba253d13,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_core_pr_auc.tex,8d0fcd238bbdf2f4,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_h2_control.csv,618cc636a06e74b5,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_h2_control_dr_at_thr.csv,b72f89c41423271d,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_h2_control_dr_at_thr.tex,c0484bbeb785f04a,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_h2_control_fpr_at_thr.csv,cc3c3ad45cee3b4b,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_h2_control_fpr_at_thr.tex,4ea2b25c098e7b7d,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_h2_control_mcc_at_thr.csv,4989b28fb933f11f,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_h2_control_mcc_at_thr.tex,7b95596ccc034ec4,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_h2_control_oracle_fpr_at_dr.csv,85ed8c936dead299,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_h2_control_oracle_fpr_at_dr.tex,ae277725087a93af,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_h2_control_pr_auc.csv,9a444133808376c2,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_h2_control_pr_auc.tex,37b1e9441d564a06,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_long.csv,59020bf757edc1ea,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_missing.csv,01ba4719c80b6fe9,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_nf43.csv,29287965226d83cc,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_nf43_dr_at_thr.csv,a049780e151814fb,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_nf43_dr_at_thr.tex,950516fb140e66a2,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_nf43_fpr_at_thr.csv,a8c72aa867aa48f8,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_nf43_fpr_at_thr.tex,4fdf87639d707ec2,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_nf43_mcc_at_thr.csv,d0a0f868586dbcfc,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_nf43_mcc_at_thr.tex,d69a1af519a67d95,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_nf43_oracle_fpr_at_dr.csv,9cfdcbe8f39359a4,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_nf43_oracle_fpr_at_dr.tex,3ae6b0333fb35acd,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_nf43_pr_auc.csv,6d3396e2c64dec59,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/matrix_nf43_pr_auc.tex,cfa89c185cb02066,C6,c6_matrix,mlflow,python scripts/matrix.py,train,207,provenance/c6_matrix_runs.csv,True,d5dfe01
+tables/profile_cic17_orig.csv,e062f714a800bb86,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/profile_lycos17.csv,e071da724af619c1,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/profile_lycos18.csv,46adb7a86f0a3d27,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/profile_nf_cse_cic18_v2.csv,264d571c7e4468a0,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/profile_nf_ton_v2.csv,7340b4b7ec303401,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/profile_nf_unsw_v2.csv,c5fee77a16eb0298,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/rename_map_cic17_orig.json,4db8326f20089117,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/rename_map_lycos17.json,09d830ef019c6f2b,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/rename_map_lycos18.json,f9539e9251e9d220,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/rename_map_nf_cse_cic18_v2.json,dd9792151e9aee24,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/rename_map_nf_ton_v2.json,49fabf288b3d5da6,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/rename_map_nf_unsw_v2.json,f672067d363c2aa7,C1,c1_ingest,pipeline,python scripts/ingest.py --dataset all,,0,,True,d5dfe01
+tables/split_family_counts.csv,0ab5d7fda3dd1c76,C3,c3_split,pipeline,python scripts/split.py --dataset all,,0,,True,d5dfe01
+tables/splits_lock.csv,93379e56290a0d26,C3,c3_split,pipeline,python scripts/split.py --dataset all,,0,,True,d5dfe01
