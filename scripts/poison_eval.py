@@ -174,6 +174,20 @@ def plot(df: pl.DataFrame, cfg: dict, target: str, adapter: str) -> None:
     plt.close(fig)
 
 
+def summarise(df: pl.DataFrame, cfg: dict) -> pl.DataFrame:
+    """Final round, mean +- std over seeds, plus how often each guard accepted / rolled back / clipped."""
+    keys = ["target", "adapter", "attack", "rho", "guards"]
+    fin = df.filter(pl.col("round") == cfg["rounds"])
+    summ = (fin.group_by(keys)
+            .agg(*[pl.col(c).mean().alias(c) for c in ("dr_target", "fpr", "dr_other", "canary_dr")],
+                 pl.col("dr_target").std().alias("dr_target_std"), pl.len().alias("seeds"))
+            .sort(keys))
+    acc = df.filter(pl.col("round") > 0).group_by(keys).agg(
+        pl.col("accepted").mean().alias("accept_rate"), pl.col("rolled_back").sum().alias("rollbacks"),
+        pl.col("clipped").mean().alias("clip_rate"))
+    return summ.join(acc, on=keys).sort(keys)                  # deterministic row order (rebuild check)
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(asctime)s %(message)s", datefmt="%H:%M:%S")
     for noisy in ("mlflow", "alembic", "urllib3"):
@@ -182,10 +196,20 @@ def main() -> None:
     ap.add_argument("--config", default="configs/poison.yaml")
     ap.add_argument("--seeds", type=int, nargs="*", default=None)
     ap.add_argument("--plot-only", action="store_true", help="redraw the figures from c17_rounds.csv")
+    ap.add_argument("--summary-only", action="store_true",
+                    help="rebuild c17_rounds.csv from the latest finished MLflow run, then the summary and figures")
     args = ap.parse_args()
     cfg = config.load(args.config)
-    if args.plot_only:
+    if args.summary_only:
+        runs = log.find_runs(experiment=cfg["experiment"], finished_only=True)
+        rid = runs.sort_values("start_time").run_id.iloc[-1]
+        src = mlflow.artifacts.download_artifacts(run_id=rid, artifact_path="c17_rounds.csv")
+        pl.read_csv(src).write_csv(paths.TABLES / "c17_rounds.csv")
+        logging.info("c17_rounds.csv from MLflow run %s", rid)
+    if args.plot_only or args.summary_only:
         df = pl.read_csv(paths.TABLES / "c17_rounds.csv")
+        if args.summary_only:
+            summarise(df, cfg).write_csv(paths.TABLES / "c17_summary.csv")
         for target in cfg["targets"]:
             for adapter in cfg["adapters"]:
                 plot(df, cfg, target, adapter)
@@ -222,15 +246,7 @@ def main() -> None:
                 pl.DataFrame(rows).write_csv(out)               # checkpoint
         df = pl.DataFrame(rows)
         df.write_csv(out)
-        fin = df.filter(pl.col("round") == cfg["rounds"])
-        summ = (fin.group_by("target", "adapter", "attack", "rho", "guards")
-                .agg(*[pl.col(c).mean().alias(c) for c in ("dr_target", "fpr", "dr_other", "canary_dr")],
-                     pl.col("dr_target").std().alias("dr_target_std"), pl.len().alias("seeds"))
-                .sort("target", "adapter", "attack", "rho", "guards"))
-        acc = df.filter(pl.col("round") > 0).group_by("target", "adapter", "attack", "rho", "guards").agg(
-            pl.col("accepted").mean().alias("accept_rate"), pl.col("rolled_back").sum().alias("rollbacks"),
-            pl.col("clipped").mean().alias("clip_rate"))
-        summ = summ.join(acc, on=["target", "adapter", "attack", "rho", "guards"])
+        summ = summarise(df, cfg)
         summ.write_csv(paths.TABLES / "c17_summary.csv")
         for target in cfg["targets"]:
             for adapter in cfg["adapters"]:

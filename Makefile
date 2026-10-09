@@ -85,5 +85,11 @@ demo:             ## C16: fresh API + dashboard (http://localhost:8501); press "
 	$(PY) scripts/run_demo.py
 rehearse:         ## C16: run the 5-minute demo script 3x through the real dashboard (AppTest) -> c16_rehearsals.csv
 	$(PY) scripts/rehearse_demo.py
-reproduce: ingest bridge tracks split
-	@echo "Remaining reproduce steps are added as components land (see Build_Guide.md)."
+reproduce:        ## C18: the whole pipeline, stage by stage, resumable (docs/REPRODUCE.md); STAGES='c6 c7' for a subset
+	bash scripts/reproduce.sh $(STAGES)
+tables:           ## C18: rebuild every MLflow-backed table / figure + PROVENANCE.csv (~3 min, no training)
+	$(PY) scripts/make_tables.py --derived
+figures:          ## C18: the figure subset of `make tables`
+	$(PY) scripts/make_figures.py --derived
+model-cards:      ## C18: reports/model_cards/ from configs, bundles and the matrix
+	$(PY) scripts/make_model_cards.py

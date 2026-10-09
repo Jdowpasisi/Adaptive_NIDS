@@ -73,7 +73,8 @@ def evaluate(y: np.ndarray, s: np.ndarray, thr: float) -> dict:
     return {k: ev[k] for k in ("fpr_at_thr", "dr_at_thr", "mcc_at_thr", "pr_auc")}
 
 
-def run_target(cfg: dict, track: str, target: str, s: int, iters: int | None) -> pd.DataFrame:
+def run_target(cfg: dict, track: str, target: str, s: int, iters: int | None,
+               summary_only: bool = False) -> pd.DataFrame | None:
     d, tc, ec = cfg["data"], cfg["tasks"], cfg["eval"]
     rcfg = {k: v for k, v in cfg.items() if k not in ("tracks", "seeds")} | {"track": track, "target": target}
     if iters:
@@ -83,6 +84,9 @@ def run_target(cfg: dict, track: str, target: str, s: int, iters: int | None) ->
     if not runs.empty:
         rid = runs.sort_values("start_time").run_id.iloc[-1]
         return pd.read_parquet(mlflow.artifacts.download_artifacts(run_id=rid, artifact_path="c12_rows.parquet"))
+    if summary_only:
+        logging.warning("no finished C12 run for %s %s seed %d (skipped: --summary-only)", track, target, s)
+        return None
     seed.set_seed(s)
     rng = np.random.default_rng(s)
     t0 = time.time()
@@ -285,6 +289,7 @@ def main() -> None:
     ap.add_argument("--targets", default=None)
     ap.add_argument("--seeds", default=None)
     ap.add_argument("--iters", type=int, default=None, help="override meta-iterations (quick checks only)")
+    ap.add_argument("--summary-only", action="store_true", help="rebuild from finished MLflow runs; never train")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(asctime)s %(message)s", datefmt="%H:%M:%S")
     for noisy in ("mlflow", "alembic", "urllib3"):
@@ -297,8 +302,8 @@ def main() -> None:
             continue
         for tgt in (args.targets.split(",") if args.targets else dsets):
             for s in seeds:
-                parts.append(run_target(cfg, track, tgt, s, args.iters))
-    df = pd.concat(parts, ignore_index=True)
+                parts.append(run_target(cfg, track, tgt, s, args.iters, args.summary_only))
+    df = pd.concat([p for p in parts if p is not None], ignore_index=True)
     if args.iters is None and args.targets is None:
         df.to_csv(paths.TABLES / "c12_long.csv", index=False)
     summ = df.groupby(["track", "method", "budget"]).agg(

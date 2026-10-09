@@ -22,6 +22,18 @@ Activate the venv for interactive work: `source ~/.venvs/driftguard/bin/activate
 **Colab / Kaggle:** `pip install -r requirements.txt && pip install -e . --no-deps`. Point runs back at the
 shared store by exporting `MLFLOW_TRACKING_URI`, or copy the run's `mlruns/` folder into the repo afterwards.
 
+## Results and reproduction
+
+- **Results:** [reports/REPORT.md](reports/REPORT.md) is organised by hypothesis (H1–H8).
+  [reports/FINDINGS.md](reports/FINDINGS.md) is the full chronological record.
+- **Cards:** model cards are in [reports/model_cards/](reports/model_cards/); the dataset card is
+  [DATASET_CARD.md](DATASET_CARD.md).
+- **Rebuild:** `make tables` rebuilds every table and figure from the logged MLflow runs and writes
+  `reports/PROVENANCE.csv`, mapping each file to the run IDs behind it.
+- **Full pipeline:** `make reproduce` reruns everything, stage by stage, and is resumable. See
+  [docs/REPRODUCE.md](docs/REPRODUCE.md).
+- **Live demo:** `make demo`, then follow [docs/DEMO.md](docs/DEMO.md).
+
 ## Layout
 
 | Path | What |
